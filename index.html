@@ -1,0 +1,3800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>多账号矩阵运营管理工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --fg: #0a0a0a;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --border-strong: #d6d3d1;
+    --muted: #57534e;
+    --subtle: #a8a29e;
+    --bg-subtle: #f5f5f4;
+    --hover: #f5f5f4;
+    --danger: #b91c1c;
+    --danger-bg: #fef2f2;
+    --success: #15803d;
+    --success-bg: #f0fdf4;
+    --warning: #b45309;
+    --warning-bg: #fffbeb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.5;
+    min-height: 100vh;
+    font-feature-settings: 'ss01', 'ss02', 'cv01';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .serif { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
+
+  /* ===== Layout ===== */
+  .app {
+    display: grid;
+    grid-template-columns: 264px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    background: var(--fg);
+    color: #fafaf9;
+    padding: 36px 22px 24px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #000;
+  }
+
+  .brand { margin-bottom: 44px; padding: 0 6px; }
+  .brand-mark {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fafaf9;
+    line-height: 1.1;
+  }
+  .brand-mark em {
+    font-style: italic;
+    font-weight: 400;
+    color: #a8a29e;
+  }
+  .brand-sub {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #78716c;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  .nav { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .nav-section-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #57534e;
+    padding: 14px 14px 8px;
+    font-weight: 600;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #a8a29e;
+    font-size: 13.5px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    text-align: left;
+    width: 100%;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+  .nav-item:hover { color: #fafaf9; background: rgba(255,255,255,0.04); }
+  .nav-item.active { color: #fafaf9; background: rgba(255,255,255,0.08); }
+  .nav-num {
+    font-family: 'Fraunces', serif;
+    font-size: 12px;
+    width: 22px;
+    color: #57534e;
+    font-style: italic;
+    font-weight: 500;
+  }
+  .nav-item.active .nav-num { color: #d6d3d1; }
+  .nav-item .nav-label { flex: 1; }
+  .nav-item .nav-count {
+    font-size: 11px;
+    color: #57534e;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .sidebar-footer {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #292524;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sidebar-footer .btn-sidebar {
+    background: transparent;
+    color: #a8a29e;
+    border: 1px solid #292524;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  .sidebar-footer .btn-sidebar:hover {
+    color: #fafaf9;
+    border-color: #44403c;
+    background: rgba(255,255,255,0.03);
+  }
+  .sidebar-footer .btn-sidebar.danger:hover {
+    color: #fca5a5;
+    border-color: #7f1d1d;
+    background: rgba(185, 28, 28, 0.1);
+  }
+  .sidebar-meta {
+    font-size: 10px;
+    color: #44403c;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0 4px;
+    margin-top: 8px;
+  }
+
+  /* ===== Main ===== */
+  .main {
+    padding: 48px 56px 80px;
+    max-width: 1500px;
+    min-width: 0;
+  }
+
+  .page { display: none; animation: fadeIn 0.25s ease; }
+  .page.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .page-header {
+    margin-bottom: 32px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .page-title-wrap { flex: 1; min-width: 0; }
+  .page-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--subtle);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .page-title {
+    font-family: 'Fraunces', serif;
+    font-size: 38px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  .page-title em {
+    font-style: italic;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .page-subtitle {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-top: 10px;
+    max-width: 60ch;
+    line-height: 1.55;
+  }
+  .page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ===== Buttons ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--fg);
+    background: var(--fg);
+    color: #fafaf9;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--fg);
+    border-color: var(--border-strong);
+  }
+  .btn-ghost:hover {
+    background: var(--bg-subtle);
+    border-color: var(--fg);
+    opacity: 1;
+  }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-xs { padding: 4px 9px; font-size: 11px; border-radius: 4px; }
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border-color: var(--border-strong);
+  }
+  .btn-danger:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+    opacity: 1;
+  }
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    justify-content: center;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-icon:hover { color: var(--fg); border-color: var(--fg); background: var(--bg-subtle); }
+
+  /* ===== Cards ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .card-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .card-meta {
+    font-size: 11px;
+    color: var(--subtle);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ===== Toolbar ===== */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 10px 14px 10px 36px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--fg);
+    transition: border-color 0.15s ease;
+  }
+  .search-box input:focus { outline: none; border-color: var(--fg); }
+  .search-box::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--subtle);
+    border-radius: 50%;
+  }
+  .search-box::after {
+    content: "";
+    position: absolute;
+    left: 23px;
+    top: 22px;
+    width: 6px;
+    height: 1.5px;
+    background: var(--subtle);
+    transform: rotate(45deg);
+  }
+  .filter-select {
+    padding: 10px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--fg);
+    cursor: pointer;
+    min-width: 130px;
+  }
+  .filter-select:focus { outline: none; border-color: var(--fg); }
+
+  /* ===== Tables ===== */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 600px;
+  }
+  thead th {
+    text-align: left;
+    padding: 13px 16px;
+    background: var(--bg-subtle);
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 0.12s ease; }
+  tbody tr:hover { background: var(--bg-subtle); }
+
+  .cell-main { font-weight: 600; color: var(--fg); }
+  .cell-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .cell-num { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+  .row-actions { display: flex; gap: 6px; white-space: nowrap; }
+
+  /* ===== Badges ===== */
+  .badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .badge-dark { background: var(--fg); color: #fafaf9; border-color: var(--fg); }
+  .badge-success { background: var(--success-bg); color: var(--success); border-color: #bbf7d0; }
+  .badge-warning { background: var(--warning-bg); color: var(--warning); border-color: #fde68a; }
+  .badge-danger { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
+  .badge-muted { background: var(--bg-subtle); color: var(--muted); }
+
+  /* ===== Forms ===== */
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .form-row.three { grid-template-columns: repeat(3, 1fr); }
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-field label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .form-field label .req { color: var(--danger); margin-left: 2px; }
+  input, select, textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--fg);
+    transition: border-color 0.15s ease;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--fg);
+  }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .form-hint { font-size: 11px; color: var(--subtle); }
+
+  /* ===== Modal ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,10,0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 10px;
+    max-width: 640px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px;
+    animation: modalIn 0.2s ease;
+  }
+  .modal.modal-lg { max-width: 820px; }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .modal-header {
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .modal-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .modal-close {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--subtle);
+    cursor: pointer;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+  }
+  .modal-close:hover { color: var(--fg); }
+  .modal-footer {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--fg);
+    color: #fafaf9;
+    padding: 11px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ===== Empty State ===== */
+  .empty {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--subtle);
+  }
+  .empty-mark {
+    font-family: 'Fraunces', serif;
+    font-size: 56px;
+    font-style: italic;
+    color: var(--border-strong);
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+  .empty-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .empty-desc {
+    font-size: 13px;
+    color: var(--subtle);
+    max-width: 36ch;
+    margin: 0 auto 20px;
+  }
+
+  /* ===== Strategy / Plan layouts ===== */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .section-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px;
+    margin-bottom: 16px;
+  }
+  .section-block-title {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-block-title .num {
+    font-style: italic;
+    color: var(--subtle);
+    font-size: 14px;
+    font-weight: 400;
+  }
+  .section-block-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .text-content {
+    font-size: 13.5px;
+    color: var(--fg);
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+  .text-content.empty-text {
+    color: var(--subtle);
+    font-style: italic;
+  }
+
+  /* ===== Version chips ===== */
+  .version-list {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .version-chip {
+    padding: 7px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .version-chip:hover { border-color: var(--fg); }
+  .version-chip.active {
+    background: var(--fg);
+    color: #fafaf9;
+    border-color: var(--fg);
+  }
+  .version-chip .v-date {
+    font-size: 10px;
+    color: var(--subtle);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .version-chip.active .v-date { color: #a8a29e; }
+
+  /* ===== Stat cards ===== */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .stat-label {
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .stat-value .unit {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+  .stat-trend {
+    font-size: 11px;
+    color: var(--success);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-trend.neg { color: var(--danger); }
+
+  /* ===== Timeline / edit history ===== */
+  .timeline {
+    margin-top: 14px;
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    padding: 6px 0 12px 14px;
+    font-size: 12.5px;
+  }
+  .timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 12px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--fg);
+  }
+  .timeline-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--subtle);
+    margin-bottom: 2px;
+  }
+  .timeline-content {
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ===== Account selector / group ===== */
+  .group-section { margin-bottom: 28px; }
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-header h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .group-header .group-count {
+    font-size: 11px;
+    color: var(--subtle);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ===== Export modal preview ===== */
+  .export-preview {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* ===== Date range filter ===== */
+  .date-range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .date-range-wrap:hover {
+    border-color: var(--fg);
+  }
+  .date-range-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .date-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .date-range-input-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .date-range-input-label {
+    font-size: 9px;
+    color: var(--subtle);
+    letter-spacing: 0.05em;
+  }
+  .date-range-input {
+    width: 110px;
+    padding: 6px 8px;
+    font-size: 12px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--fg);
+    background: var(--bg-subtle);
+    transition: border-color 0.15s ease;
+  }
+  .date-range-input:hover {
+    border-color: var(--fg);
+  }
+  .date-range-icon {
+    font-size: 14px;
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .date-range-sep {
+    color: var(--subtle);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0 2px;
+  }
+  .date-range-clear {
+    white-space: nowrap;
+  }
+
+  /* ===== Date picker modal ===== */
+  .date-picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,10,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+  }
+  .date-picker-overlay.active { display: flex; }
+  .date-picker {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 20px;
+    min-width: 320px;
+    animation: modalIn 0.15s ease;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  }
+  .date-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .date-picker-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .date-picker-close {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: var(--subtle);
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .date-picker-close:hover { color: var(--fg); }
+  .date-picker-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .date-picker-tab {
+    flex: 1;
+    padding: 8px 12px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    position: relative;
+    font-family: inherit;
+    transition: color 0.15s ease;
+  }
+  .date-picker-tab:hover { color: var(--fg); }
+  .date-picker-tab.active {
+    color: var(--fg);
+  }
+  .date-picker-tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: var(--fg);
+    border-radius: 1px;
+  }
+  .date-picker-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .date-picker-nav-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 16px;
+    transition: all 0.15s ease;
+  }
+  .date-picker-nav-btn:hover {
+    color: var(--fg);
+    border-color: var(--fg);
+  }
+  .date-picker-month-year {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .date-picker-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--subtle);
+    padding-bottom: 8px;
+  }
+  .date-picker-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .date-picker-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.12s ease;
+    color: var(--fg);
+    border: 1px solid transparent;
+  }
+  .date-picker-day:hover {
+    background: var(--bg-subtle);
+  }
+  .date-picker-day.other-month {
+    color: var(--subtle);
+    opacity: 0.4;
+  }
+  .date-picker-day.today {
+    font-weight: 600;
+    color: var(--danger);
+  }
+  .date-picker-day.selected-start {
+    background: var(--fg);
+    color: #fafaf9;
+  }
+  .date-picker-day.selected-end {
+    background: var(--fg);
+    color: #fafaf9;
+  }
+  .date-picker-day.in-range {
+    background: rgba(10,10,10,0.08);
+  }
+  .date-picker-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .date-picker-footer span {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .date-picker-apply {
+    background: var(--fg);
+    color: #fafaf9;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s ease;
+  }
+  .date-picker-apply:hover { opacity: 0.85; }
+
+  /* ===== Schedule mobile cards ===== */
+  .schedule-mobile-view { display: none; }
+  .sched-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .sched-card:hover { border-color: var(--fg); }
+  .sched-card:active { transform: scale(0.99); }
+  .sched-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sched-card-topic {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    flex: 1;
+  }
+  .sched-card-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    flex-wrap: wrap;
+  }
+  .sched-card-date { font-size: 11px; }
+  .sched-card-preview {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    padding: 8px 10px;
+    background: var(--bg-subtle);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+  }
+  .sched-card-tags {
+    font-size: 11.5px;
+    color: var(--subtle);
+    margin-bottom: 10px;
+  }
+  .sched-card-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .sched-card-hint {
+    font-size: 10.5px;
+    color: var(--subtle);
+    text-align: right;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* ===== Script content (full) ===== */
+  .script-content {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 900px) {
+    .main { padding: 32px 24px 100px; }
+    .page-title { font-size: 30px; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      top: auto;
+      height: auto;
+      flex-direction: column;
+      padding: 10px 12px 12px;
+      border-right: none;
+      border-top: 1px solid #000;
+      z-index: 50;
+    }
+    .brand, .sidebar-footer, .nav-section-label { display: none; }
+    .nav {
+      flex-direction: row;
+      gap: 4px;
+      overflow-x: auto;
+      flex: 1;
+    }
+    .nav-item {
+      padding: 8px 14px;
+      white-space: nowrap;
+      font-size: 12px;
+      gap: 8px;
+    }
+    .nav-num { display: none; }
+    .nav-item .nav-count { display: none; }
+    .main { padding: 24px 16px 100px; }
+    .page-title { font-size: 26px; }
+    .page-header { flex-direction: column; align-items: stretch; }
+    .form-row, .form-row.three { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-value { font-size: 22px; }
+    .modal { padding: 22px 18px; }
+    .modal-title { font-size: 20px; }
+    table { font-size: 12px; }
+    thead th, tbody td { padding: 10px 10px; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .filter-select { min-width: 0; }
+    /* 手机端：内容排期表切换为卡片视图 */
+    .schedule-desktop-view { display: none; }
+    .schedule-mobile-view { display: block; }
+    /* 手机端脚本弹窗更大更易读 */
+    .script-content { font-size: 14px; line-height: 1.85; padding: 14px; max-height: 55vh; }
+    .sched-card { padding: 12px 14px; }
+    .sched-card-topic { font-size: 15px; }
+    /* 手机端日期筛选器独占一行，完整宽度 */
+    .date-range-wrap {
+      width: 100%;
+      justify-content: space-between;
+      padding: 8px 12px;
+    }
+    .date-range-input {
+      width: 90px;
+      font-size: 11px;
+    }
+    /* 手机端日历弹窗适配 */
+    .date-picker {
+      width: 100%;
+      max-width: 340px;
+      padding: 16px;
+    }
+    .date-picker-day {
+      font-size: 12px;
+    }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--subtle); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">矩阵<em>·Matrix</em></div>
+      <div class="brand-sub">Operations Workbench</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-label">工作台</div>
+      <button class="nav-item active" data-page="accounts" onclick="navigateTo('accounts')">
+        <span class="nav-num">01</span>
+        <span class="nav-label">账号资产档案</span>
+        <span class="nav-count" id="nav-count-accounts">0</span>
+      </button>
+      <button class="nav-item" data-page="strategy" onclick="navigateTo('strategy')">
+        <span class="nav-num">02</span>
+        <span class="nav-label">矩阵策略规划</span>
+        <span class="nav-count" id="nav-count-strategies">0</span>
+      </button>
+      <button class="nav-item" data-page="plans" onclick="navigateTo('plans')">
+        <span class="nav-num">03</span>
+        <span class="nav-label">周期运营计划</span>
+        <span class="nav-count" id="nav-count-plans">0</span>
+      </button>
+      <button class="nav-item" data-page="schedule" onclick="navigateTo('schedule')">
+        <span class="nav-num">04</span>
+        <span class="nav-label">内容发布排期</span>
+        <span class="nav-count" id="nav-count-schedules">0</span>
+      </button>
+      <button class="nav-item" data-page="review" onclick="navigateTo('review')">
+        <span class="nav-num">05</span>
+        <span class="nav-label">数据复盘日志</span>
+        <span class="nav-count" id="nav-count-reviews">0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-sidebar" id="sync-status-btn" onclick="openSupabaseConfig()">
+        <span id="sync-status-icon">☁️</span>
+        <span id="sync-status-text">配置云同步</span>
+      </button>
+      <button class="btn-sidebar" id="manual-sync-btn" onclick="manualSync()" style="display:none;">🔄 立即同步</button>
+      <button class="btn-sidebar" onclick="exportAll()">导出全部数据备份</button>
+      <button class="btn-sidebar" onclick="importBackup()">导入数据备份</button>
+      <button class="btn-sidebar danger" onclick="confirmClearAll()">清空所有数据</button>
+      <div class="sidebar-meta" id="storage-meta">本地存储 · 0 KB</div>
+    </div>
+  </aside>
+
+  <!-- ============ Main ============ -->
+  <main class="main">
+
+    <!-- ===== Page 1: Accounts ===== -->
+    <section class="page active" id="page-accounts">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-eyebrow">Page 01 · Asset Archive</div>
+          <h1 class="page-title">账号资产<em>档案</em></h1>
+          <p class="page-subtitle">统一登记矩阵内全部账号的基础信息、定位职能与风控备注，便于资产盘点与运营协同。</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportPage('accounts')">导出此页</button>
+          <button class="btn btn-sm" onclick="openAccountModal()">+ 新增账号</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="text" id="account-search" placeholder="搜索账号名称 / 定位 / 运营人 / 风控备注..." oninput="renderAccounts()" />
+        </div>
+        <select class="filter-select" id="filter-platform" onchange="renderAccounts()">
+          <option value="">全部平台</option>
+        </select>
+        <select class="filter-select" id="filter-function" onchange="renderAccounts()">
+          <option value="">全部职能</option>
+          <option value="涨粉">涨粉</option>
+          <option value="带货">带货</option>
+          <option value="引流">引流</option>
+          <option value="品牌">品牌</option>
+        </select>
+        <select class="filter-select" id="filter-level" onchange="renderAccounts()">
+          <option value="">全部等级</option>
+          <option value="S">S 级</option>
+          <option value="A">A 级</option>
+          <option value="B">B 级</option>
+          <option value="C">C 级</option>
+        </select>
+      </div>
+
+      <div id="accounts-list"></div>
+    </section>
+
+    <!-- ===== Page 2: Strategy ===== -->
+    <section class="page" id="page-strategy">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-eyebrow">Page 02 · Strategy Planning</div>
+          <h1 class="page-title">矩阵策略<em>规划</em></h1>
+          <p class="page-subtitle">沉淀整体矩阵布局、账号分工、导流逻辑与差异化方案，支持多套季度策略版本并行管理。</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportPage('strategy')">导出此页</button>
+          <button class="btn btn-sm" onclick="openStrategyModal()">+ 新建策略版本</button>
+        </div>
+      </div>
+
+      <div id="strategy-container"></div>
+    </section>
+
+    <!-- ===== Page 3: Plans ===== -->
+    <section class="page" id="page-plans">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-eyebrow">Page 03 · Operation Plans</div>
+          <h1 class="page-title">周期运营<em>计划表</em></h1>
+          <p class="page-subtitle">按月或季度创建运营计划，绑定账号、设定目标预算与里程碑，跟踪完成状态并留存历史存档。</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportPage('plans')">导出此页</button>
+          <button class="btn btn-sm" onclick="openPlanModal()">+ 新建计划</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <select class="filter-select" id="filter-plan-period" onchange="renderPlans()">
+          <option value="">全部周期类型</option>
+          <option value="月度">月度</option>
+          <option value="季度">季度</option>
+        </select>
+        <select class="filter-select" id="filter-plan-status" onchange="renderPlans()">
+          <option value="">全部状态</option>
+          <option value="进行中">进行中</option>
+          <option value="已完成">已完成</option>
+          <option value="已归档">已归档</option>
+        </select>
+        <select class="filter-select" id="filter-plan-account" onchange="renderPlans()">
+          <option value="">全部账号</option>
+        </select>
+      </div>
+
+      <div id="plans-list"></div>
+    </section>
+
+    <!-- ===== Page 4: Schedule ===== -->
+    <section class="page" id="page-schedule">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-eyebrow">Page 04 · Content Schedule</div>
+          <h1 class="page-title">内容发布<em>排期表</em></h1>
+          <p class="page-subtitle">按账号分类排期内容选题、类型与发布时间，跟踪草稿 / 待发 / 已发布状态，确保发布节奏有序。</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportPage('schedule')">导出此页</button>
+          <button class="btn btn-sm" onclick="openScheduleModal()">+ 新增排期</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <select class="filter-select" id="filter-sched-account" onchange="renderSchedule()">
+          <option value="">全部账号</option>
+        </select>
+        <select class="filter-select" id="filter-sched-status" onchange="renderSchedule()">
+          <option value="">全部状态</option>
+          <option value="草稿">草稿</option>
+          <option value="待发">待发</option>
+          <option value="已发布">已发布</option>
+        </select>
+        <select class="filter-select" id="filter-sched-type" onchange="renderSchedule()">
+          <option value="">全部类型</option>
+          <option value="短视频">短视频</option>
+          <option value="图文">图文</option>
+          <option value="直播">直播</option>
+          <option value="长视频">长视频</option>
+          <option value="合集">合集</option>
+        </select>
+        <div class="date-range-wrap" onclick="toggleDatePicker('sched')">
+          <div class="date-range-label">发布日期</div>
+          <div class="date-range-inputs">
+            <div class="date-range-input-wrap">
+              <span class="date-range-input-label">开始</span>
+              <div class="date-range-input" id="filter-sched-date-start-display">选择日期</div>
+              <span class="date-range-icon">📅</span>
+            </div>
+            <span class="date-range-sep">~</span>
+            <div class="date-range-input-wrap">
+              <span class="date-range-input-label">结束</span>
+              <div class="date-range-input" id="filter-sched-date-end-display">选择日期</div>
+              <span class="date-range-icon">📅</span>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-xs date-range-clear" onclick="event.stopPropagation();clearSchedDateFilter()" title="清空日期筛选">清空</button>
+        </div>
+      </div>
+
+      <div id="schedule-container"></div>
+    </section>
+
+    <!-- ===== Page 5: Review ===== -->
+    <section class="page" id="page-review">
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <div class="page-eyebrow">Page 05 · Performance Review</div>
+          <h1 class="page-title">数据复盘<em>日志</em></h1>
+          <p class="page-subtitle">绑定账号录入周期数据，自动统计涨粉与转化表现，记录复盘结论与下阶段策略调整，留存完整修改历史。</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportPage('review')">导出此页</button>
+          <button class="btn btn-sm" onclick="openReviewModal()">+ 新增复盘</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <select class="filter-select" id="filter-review-account" onchange="renderReview()">
+          <option value="">全部账号</option>
+        </select>
+      </div>
+
+      <div id="review-container"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ Modal ============ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title">标题</div>
+        <div class="modal-subtitle" id="modal-subtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- ============ Toast ============ -->
+<div class="toast" id="toast"></div>
+
+<!-- ============ Date Picker Modal ============ -->
+<div class="date-picker-overlay" id="date-picker-overlay" onclick="closeDatePicker()">
+  <div class="date-picker" onclick="event.stopPropagation()">
+    <div class="date-picker-header">
+      <div class="date-picker-title">选择日期范围</div>
+      <button class="date-picker-close" onclick="closeDatePicker()">×</button>
+    </div>
+    <div class="date-picker-tabs">
+      <button class="date-picker-tab active" onclick="setDatePickerMode('range')">日期范围</button>
+      <button class="date-picker-tab" onclick="setDatePickerMode('single')">选择日期</button>
+    </div>
+    <div class="date-picker-nav">
+      <button class="date-picker-nav-btn" onclick="changeDatePickerMonth(-1)">◀</button>
+      <div class="date-picker-month-year" id="date-picker-month-year"></div>
+      <button class="date-picker-nav-btn" onclick="changeDatePickerMonth(1)">▶</button>
+    </div>
+    <div class="date-picker-weekdays">
+      <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+    </div>
+    <div class="date-picker-days" id="date-picker-days"></div>
+    <div class="date-picker-footer">
+      <span id="date-picker-selection"></span>
+      <button class="date-picker-apply" onclick="applyDatePicker()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Hidden file input for import ============ -->
+<input type="file" id="import-file-input" accept=".json,.txt" style="display:none" onchange="handleImportFile(event)" />
+
+<script>
+/* ============================================================
+   多账号矩阵运营管理工作台 · 支持云同步版本
+   数据存储：localStorage + Supabase（可选）
+============================================================ */
+
+const STORAGE_KEY = 'matrix_workbench_v2';
+const CONFIG_KEY = 'matrix_workbench_config';
+
+let state = {
+  accounts: [],
+  strategies: [],
+  plans: [],
+  schedules: [],
+  reviews: []
+};
+
+let config = {
+  supabaseUrl: '',
+  supabaseAnonKey: '',
+  enabled: false
+};
+
+let supabaseClient = null;
+let isOnline = navigator.onLine;
+let syncInProgress = false;
+let currentStrategyId = null;
+let editContext = { type: null, id: null };
+
+/* ===== Config ===== */
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      config = Object.assign(config, parsed);
+      if (config.enabled && config.supabaseUrl && config.supabaseAnonKey) {
+        initSupabase();
+      }
+    }
+  } catch (e) {
+    console.error('加载配置失败:', e);
+  }
+}
+
+function saveConfig() {
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+}
+
+function initSupabase() {
+  try {
+    supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+    updateSyncStatus('ready');
+    testSupabaseConnection();
+  } catch (e) {
+    console.error('Supabase 初始化失败:', e);
+    updateSyncStatus('error');
+  }
+}
+
+async function testSupabaseConnection() {
+  if (!supabaseClient) return;
+  try {
+    const { error } = await supabaseClient.from('accounts').select('id').limit(1);
+    if (error) {
+      if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+        updateSyncStatus('no-tables');
+        toast('请先在 Supabase 中创建数据表');
+      } else {
+        throw error;
+      }
+    } else {
+      updateSyncStatus('connected');
+    }
+  } catch (e) {
+    console.error('Supabase 连接测试失败:', e);
+    updateSyncStatus('error');
+  }
+}
+
+/* ===== Storage ===== */
+async function loadState() {
+  // 先从 localStorage 加载
+  try {
+    let raw = localStorage.getItem(STORAGE_KEY);
+    
+    // 向下兼容：如果 v2 没有数据，检查 v1
+    if (!raw) {
+      const v1Raw = localStorage.getItem('matrix_workbench_v1');
+      if (v1Raw) {
+        raw = v1Raw;
+        toast('检测到旧版本数据，已自动迁移');
+      }
+    }
+    
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state = Object.assign(state, parsed);
+      // 迁移后保存到新 key
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  } catch (e) {
+    console.error('加载本地数据失败:', e);
+  }
+
+  // 如果启用了 Supabase，从云端同步
+  if (config.enabled && supabaseClient) {
+    await syncFromCloud();
+  }
+
+  updateStorageMeta();
+}
+
+async function saveState() {
+  // 先保存到本地
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    updateStorageMeta();
+  } catch (e) {
+    toast('保存失败：' + e.message);
+  }
+
+  // 如果启用了 Supabase，同步到云端
+  if (config.enabled && supabaseClient && isOnline && !syncInProgress) {
+    syncToCloud();
+  }
+}
+
+async function syncFromCloud() {
+  if (!supabaseClient || syncInProgress) return;
+  syncInProgress = true;
+  updateSyncStatus('syncing');
+
+  try {
+    const tables = ['accounts', 'strategies', 'plans', 'schedules', 'reviews'];
+    let hasCloudData = false;
+    let cloudData = {};
+    let syncLog = [];
+
+    // 拉取云端所有表的数据
+    for (const table of tables) {
+      const { data, error } = await supabaseClient.from(table).select('*');
+      if (error && error.code !== 'PGRST116') {
+        console.error(`拉取 ${table} 失败:`, error);
+        syncLog.push(`❌ ${table}: 拉取失败`);
+        continue;
+      }
+      if (data && data.length > 0) {
+        hasCloudData = true;
+        cloudData[table] = data.map(row => {
+          const { id, created_at, updated_at, ...rest } = row;
+          return { id, ...rest, createdAt: created_at, updatedAt: updated_at };
+        });
+        syncLog.push(`☁️ ${table}: 云端有 ${cloudData[table].length} 条数据`);
+      } else {
+        cloudData[table] = [];
+        syncLog.push(`📭 ${table}: 云端无数据`);
+      }
+    }
+
+    console.log('同步日志:', syncLog.join('\n'));
+
+    if (hasCloudData) {
+      // 智能合并：以云端为主，本地新增的保留
+      const oldState = JSON.parse(JSON.stringify(state));
+      let hasChanges = false;
+      let mergeLog = [];
+
+      for (const table of tables) {
+        const cloudItems = cloudData[table] || [];
+        const localItems = oldState[table] || [];
+
+        // 用 Map 合并：云端覆盖本地同 id，本地新增的保留
+        const merged = new Map();
+        cloudItems.forEach(item => merged.set(item.id, item));
+        
+        let addedFromLocal = 0;
+        let updatedFromLocal = 0;
+        
+        localItems.forEach(item => {
+          if (!merged.has(item.id)) {
+            merged.set(item.id, item);
+            addedFromLocal++;
+          } else {
+            const cloudItem = merged.get(item.id);
+            const cloudUpdated = new Date(cloudItem.updatedAt || 0).getTime();
+            const localUpdated = new Date(item.updatedAt || 0).getTime();
+            if (localUpdated > cloudUpdated) {
+              merged.set(item.id, item);
+              updatedFromLocal++;
+            }
+          }
+        });
+
+        const mergedArr = Array.from(merged.values());
+        if (addedFromLocal > 0 || updatedFromLocal > 0) {
+          mergeLog.push(`🔄 ${table}: 新增 ${addedFromLocal} 条，更新 ${updatedFromLocal} 条`);
+        }
+        
+        if (JSON.stringify(mergedArr) !== JSON.stringify(oldState[table])) {
+          state[table] = mergedArr;
+          hasChanges = true;
+        }
+      }
+
+      if (mergeLog.length > 0) {
+        console.log('合并日志:', mergeLog.join('\n'));
+      }
+
+      if (hasChanges) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        toast('已从云端同步最新数据');
+        const activePage = document.querySelector('.page.active')?.id.replace('page-', '') || 'accounts';
+        renderPage(activePage);
+        updateNavCounts();
+      }
+
+      // 推送本地新增/修改到云端
+      await syncToCloud();
+    } else {
+      // 云端无数据，迁移本地数据到云端
+      await migrateLocalToCloud();
+    }
+
+    updateSyncStatus('connected');
+  } catch (e) {
+    console.error('从云端同步失败:', e);
+    updateSyncStatus('error');
+  } finally {
+    syncInProgress = false;
+  }
+}
+
+async function migrateLocalToCloud() {
+  if (!supabaseClient) return;
+
+  const hasLocalData = Object.values(state).some(arr => arr.length > 0);
+  if (!hasLocalData) return;
+
+  updateSyncStatus('syncing');
+  toast('正在上传本地数据到云端...');
+
+  try {
+    const tables = ['accounts', 'strategies', 'plans', 'schedules', 'reviews'];
+
+    for (const table of tables) {
+      if (state[table].length === 0) continue;
+
+      const rows = state[table].map(item => ({
+        id: item.id,
+        created_at: item.createdAt || new Date().toISOString(),
+        updated_at: item.updatedAt || new Date().toISOString(),
+        ...item
+      }));
+
+      const { error } = await supabaseClient.from(table).upsert(rows);
+      if (error) {
+        console.error(`迁移 ${table} 失败:`, error);
+        throw error;
+      }
+    }
+
+    toast('本地数据已成功上传到云端');
+    updateSyncStatus('connected');
+  } catch (e) {
+    console.error('数据迁移失败:', e);
+    toast('上传失败，请检查网络连接');
+    updateSyncStatus('error');
+  }
+}
+
+async function syncToCloud() {
+  if (!supabaseClient) return;
+  
+  const isNested = syncInProgress;
+  if (!isNested) syncInProgress = true;
+
+  try {
+    const tables = ['accounts', 'strategies', 'plans', 'schedules', 'reviews'];
+    let hasData = false;
+
+    for (const table of tables) {
+      if (state[table].length === 0) continue;
+      hasData = true;
+
+      const rows = state[table].map(item => ({
+        id: item.id,
+        created_at: item.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...item
+      }));
+
+      const { error } = await supabaseClient.from(table).upsert(rows);
+      if (error) {
+        console.error(`同步 ${table} 失败:`, error);
+        throw error;
+      }
+    }
+
+    if (hasData && !isNested) {
+      toast('本地数据已同步到云端');
+    }
+  } catch (e) {
+    console.error('同步到云端失败:', e);
+    if (!isNested) toast('同步失败，请检查网络');
+  } finally {
+    if (!isNested) syncInProgress = false;
+  }
+}
+
+/* ===== Sync Status ===== */
+function updateSyncStatus(status) {
+  const iconEl = document.getElementById('sync-status-icon');
+  const textEl = document.getElementById('sync-status-text');
+  const manualBtn = document.getElementById('manual-sync-btn');
+
+  const statusMap = {
+    'ready': { icon: '☁️', text: '等待连接' },
+    'connected': { icon: '✅', text: '已同步' },
+    'syncing': { icon: '🔄', text: '同步中...' },
+    'error': { icon: '❌', text: '同步失败' },
+    'no-tables': { icon: '⚠️', text: '需创建表' },
+    'offline': { icon: '📴', text: '离线模式' }
+  };
+
+  const s = statusMap[status] || statusMap['ready'];
+  if (iconEl) iconEl.textContent = s.icon;
+  if (textEl) textEl.textContent = s.text;
+
+  // 已连接时显示手动同步按钮
+  if (manualBtn) {
+    manualBtn.style.display = (status === 'connected' || status === 'error') ? 'block' : 'none';
+  }
+}
+
+/* ===== 手动同步 ===== */
+async function manualSync() {
+  if (!supabaseClient) {
+    toast('请先配置云同步');
+    openSupabaseConfig();
+    return;
+  }
+  toast('正在同步...');
+  await syncFromCloud();
+}
+
+/* ===== 启动定时自动同步 ===== */
+function startAutoSync() {
+  // 每 30 秒自动拉取一次云端数据
+  setInterval(() => {
+    if (config.enabled && supabaseClient && isOnline && !syncInProgress) {
+      syncFromCloud();
+    }
+  }, 30000);
+
+  // 页面重新获得焦点时同步
+  window.addEventListener('focus', () => {
+    if (config.enabled && supabaseClient && isOnline && !syncInProgress) {
+      syncFromCloud();
+    }
+  });
+
+  // 页面可见性变化时同步
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && config.enabled && supabaseClient && isOnline && !syncInProgress) {
+      syncFromCloud();
+    }
+  });
+}
+
+/* ===== Supabase Config Modal ===== */
+function openSupabaseConfig() {
+  const body = `
+    <div style="margin-bottom:18px;padding:14px;background:var(--warning-bg);border:1px solid #fde68a;border-radius:6px;font-size:12.5px;color:var(--warning);">
+      <strong>首次使用请按以下步骤操作：</strong><br>
+      1. 登录 <a href="https://supabase.com" target="_blank" style="color:var(--fg);">supabase.com</a> 创建项目<br>
+      2. 在项目设置 → API 复制 URL 和 anon key<br>
+      3. 在 SQL Editor 中执行建表语句（见下方）<br>
+      4. 填入下方配置并保存
+    </div>
+    <form id="supabase-config-form">
+      <div class="form-field" style="margin-bottom:14px;">
+        <label>Supabase URL <span class="req">*</span></label>
+        <input name="supabaseUrl" required value="${escapeHtml(config.supabaseUrl)}" placeholder="https://xxxx.supabase.co" />
+      </div>
+      <div class="form-field" style="margin-bottom:14px;">
+        <label>Supabase Anon Key <span class="req">*</span></label>
+        <input name="supabaseAnonKey" required value="${escapeHtml(config.supabaseAnonKey)}" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+      </div>
+      <div class="form-field" style="margin-bottom:14px;">
+        <label>
+          <input type="checkbox" name="enabled" ${config.enabled ? 'checked' : ''} />
+          启用云同步
+        </label>
+      </div>
+    </form>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">SQL 建表语句（复制到 Supabase SQL Editor 执行）</div>
+      <textarea style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;background:var(--bg-subtle);padding:10px;border-radius:4px;width:100%;min-height:200px;resize:vertical;" readonly>CREATE TABLE accounts (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  name TEXT,
+  platform TEXT,
+  positioning TEXT,
+  function TEXT,
+  audience TEXT,
+  monetization TEXT,
+  followerBase INTEGER,
+  level TEXT,
+  operator TEXT,
+  riskNote TEXT
+);
+
+CREATE TABLE strategies (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  versionName TEXT,
+  quarter TEXT,
+  layout TEXT,
+  division TEXT,
+  crossPromotion TEXT,
+  differentiation TEXT,
+  overallPlay TEXT
+);
+
+CREATE TABLE plans (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  periodType TEXT,
+  periodLabel TEXT,
+  accountId TEXT,
+  followerGoal INTEGER,
+  conversionGoal INTEGER,
+  budget INTEGER,
+  activities TEXT,
+  milestones TEXT,
+  status TEXT
+);
+
+CREATE TABLE schedules (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  accountId TEXT,
+  topic TEXT,
+  contentType TEXT,
+  publishTime TIMESTAMPTZ,
+  copyPoints TEXT,
+  hashtags TEXT,
+  status TEXT
+);
+
+CREATE TABLE reviews (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  accountId TEXT,
+  periodLabel TEXT,
+  startFollowers INTEGER,
+  endFollowers INTEGER,
+  startConversions INTEGER,
+  endConversions INTEGER,
+  conclusion TEXT,
+  nextStrategy TEXT,
+  editHistory JSONB
+);</textarea>
+    </div>
+  `;
+
+  const footer = `
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn" onclick="saveSupabaseConfig()">保存配置</button>
+  `;
+
+  openModal('配置云同步', '连接 Supabase 实现多设备数据同步', body, footer, true);
+}
+
+async function saveSupabaseConfig() {
+  const form = document.getElementById('supabase-config-form');
+  const data = Object.fromEntries(new FormData(form));
+
+  config.supabaseUrl = data.supabaseUrl.trim();
+  config.supabaseAnonKey = data.supabaseAnonKey.trim();
+  config.enabled = form.querySelector('input[name="enabled"]').checked;
+
+  saveConfig();
+
+  if (config.enabled && config.supabaseUrl && config.supabaseAnonKey) {
+    initSupabase();
+    toast('配置已保存，正在连接云端...');
+    await new Promise(r => setTimeout(r, 500));
+    await testSupabaseConnection();
+
+    if (supabaseClient) {
+      await loadState();
+      const activePage = document.querySelector('.page.active')?.id.replace('page-', '') || 'accounts';
+      renderPage(activePage);
+    }
+  } else {
+    updateSyncStatus(config.enabled ? 'ready' : 'offline');
+    toast('配置已保存');
+  }
+
+  closeModal();
+}
+
+function updateStorageMeta() {
+  const size = new Blob([JSON.stringify(state)]).size;
+  const kb = (size / 1024).toFixed(1);
+  const meta = document.getElementById('storage-meta');
+  if (meta) meta.textContent = `本地存储 · ${kb} KB`;
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function now() {
+  return new Date().toISOString();
+}
+
+function fmtDate(iso, withTime = false) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  let s = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  if (withTime) s += ` ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return s;
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ===== Navigation ===== */
+function navigateTo(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${pageId}"]`).classList.add('active');
+  renderPage(pageId);
+  if (window.innerWidth <= 768) window.scrollTo(0, 0);
+}
+
+function renderPage(pageId) {
+  switch (pageId) {
+    case 'accounts': renderAccounts(); break;
+    case 'strategy': renderStrategy(); break;
+    case 'plans': renderPlans(); break;
+    case 'schedule': renderSchedule(); break;
+    case 'review': renderReview(); break;
+  }
+}
+
+/* ===== Toast ===== */
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ===== Modal ===== */
+function openModal(title, subtitle, bodyHtml, footerHtml, large = false) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-subtitle').textContent = subtitle || '';
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-footer').innerHTML = footerHtml || '';
+  document.getElementById('modal').classList.toggle('modal-lg', large);
+  document.getElementById('modal-overlay').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+  editContext = { type: null, id: null };
+}
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-overlay') closeModal();
+});
+
+/* ===== Nav counts ===== */
+function updateNavCounts() {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val > 0 ? val : '';
+  };
+  set('nav-count-accounts', state.accounts.length);
+  set('nav-count-strategies', state.strategies.length);
+  set('nav-count-plans', state.plans.length);
+  set('nav-count-schedules', state.schedules.length);
+  set('nav-count-reviews', state.reviews.length);
+}
+
+/* ===== Refresh account selectors ===== */
+function refreshAccountSelectors() {
+  const opts = ['<option value="">全部账号</option>']
+    .concat(state.accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`))
+    .join('');
+
+  ['filter-plan-account', 'filter-sched-account', 'filter-review-account'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) {
+      const cur = sel.value;
+      sel.innerHTML = opts;
+      sel.value = cur;
+    }
+  });
+
+  // platform filter
+  const platforms = [...new Set(state.accounts.map(a => a.platform).filter(Boolean))];
+  const platformSel = document.getElementById('filter-platform');
+  if (platformSel) {
+    const cur = platformSel.value;
+    platformSel.innerHTML = '<option value="">全部平台</option>' +
+      platforms.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    platformSel.value = cur;
+  }
+}
+
+/* ============================================================
+   PAGE 1 · Accounts
+============================================================ */
+function renderAccounts() {
+  refreshAccountSelectors();
+  const search = (document.getElementById('account-search')?.value || '').toLowerCase().trim();
+  const platform = document.getElementById('filter-platform')?.value || '';
+  const func = document.getElementById('filter-function')?.value || '';
+  const level = document.getElementById('filter-level')?.value || '';
+
+  let list = state.accounts.filter(a => {
+    if (platform && a.platform !== platform) return false;
+    if (func && a.function !== func) return false;
+    if (level && a.level !== level) return false;
+    if (search) {
+      const hay = [a.name, a.positioning, a.operator, a.riskNote, a.audience, a.monetization, a.platform]
+        .join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const container = document.getElementById('accounts-list');
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">Aa</div>
+        <div class="empty-title">暂无账号档案</div>
+        <div class="empty-desc">${search || platform || func || level ? '当前筛选条件下没有匹配的账号，试试调整筛选。' : '点击「新增账号」开始建立你的矩阵资产档案。'}</div>
+        ${(!search && !platform && !func && !level) ? '<button class="btn" onclick="openAccountModal()">+ 新增账号</button>' : ''}
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>账号</th>
+            <th>平台 / 定位</th>
+            <th>职能</th>
+            <th>目标人群</th>
+            <th>变现方式</th>
+            <th>粉丝基数</th>
+            <th>等级</th>
+            <th>运营人</th>
+            <th>风控备注</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(a => `
+            <tr>
+              <td>
+                <div class="cell-main">${escapeHtml(a.name)}</div>
+                <div class="cell-sub">${escapeHtml(a.platform || '—')}</div>
+              </td>
+              <td>
+                <div>${escapeHtml(a.positioning || '—')}</div>
+              </td>
+              <td>${a.function ? `<span class="badge badge-dark">${escapeHtml(a.function)}</span>` : '—'}</td>
+              <td>${escapeHtml(a.audience || '—')}</td>
+              <td>${escapeHtml(a.monetization || '—')}</td>
+              <td class="cell-num">${a.followerBase ? Number(a.followerBase).toLocaleString() : '—'}</td>
+              <td>${a.level ? `<span class="badge">${escapeHtml(a.level)} 级</span>` : '—'}</td>
+              <td>${escapeHtml(a.operator || '—')}</td>
+              <td>${a.riskNote ? `<span style="color:var(--danger);font-size:12px;">${escapeHtml(a.riskNote)}</span>` : '<span style="color:var(--subtle);">无</span>'}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn btn-ghost btn-xs" onclick="openAccountModal('${a.id}')">编辑</button>
+                  <button class="btn btn-danger btn-xs" onclick="deleteAccount('${a.id}')">删除</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--subtle);font-family:'JetBrains Mono',monospace;">
+      共 ${list.length} / ${state.accounts.length} 个账号
+    </div>`;
+}
+
+function openAccountModal(id = null) {
+  editContext = { type: 'account', id };
+  const a = id ? state.accounts.find(x => x.id === id) : {};
+  const isEdit = !!id;
+
+  const body = `
+    <form id="account-form" onsubmit="saveAccount(event)">
+      <div class="form-row">
+        <div class="form-field">
+          <label>账号名称 <span class="req">*</span></label>
+          <input name="name" required value="${escapeHtml(a.name || '')}" placeholder="例如：@主理人IP号" />
+        </div>
+        <div class="form-field">
+          <label>所属平台 <span class="req">*</span></label>
+          <select name="platform" required>
+            <option value="">请选择</option>
+            ${['抖音','快手','小红书','B站','视频号','微博','公众号','知乎','淘宝直播','其他'].map(p =>
+              `<option value="${p}" ${a.platform === p ? 'selected' : ''}>${p}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>账号定位</label>
+          <input name="positioning" value="${escapeHtml(a.positioning || '')}" placeholder="例如：职场成长知识分享" />
+        </div>
+        <div class="form-field">
+          <label>账号职能 <span class="req">*</span></label>
+          <select name="function" required>
+            <option value="">请选择</option>
+            ${['涨粉','带货','引流','品牌'].map(f =>
+              `<option value="${f}" ${a.function === f ? 'selected' : ''}>${f}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>目标人群</label>
+          <input name="audience" value="${escapeHtml(a.audience || '')}" placeholder="例如：25-35岁都市职场女性" />
+        </div>
+        <div class="form-field">
+          <label>变现方式</label>
+          <input name="monetization" value="${escapeHtml(a.monetization || '')}" placeholder="例如：知识付费+品牌广告" />
+        </div>
+      </div>
+      <div class="form-row three">
+        <div class="form-field">
+          <label>粉丝基数</label>
+          <input name="followerBase" type="number" min="0" value="${a.followerBase || ''}" placeholder="例如：12800" />
+        </div>
+        <div class="form-field">
+          <label>账号等级</label>
+          <select name="level">
+            <option value="">请选择</option>
+            ${['S','A','B','C'].map(l =>
+              `<option value="${l}" ${a.level === l ? 'selected' : ''}>${l} 级</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-field">
+          <label>运营人</label>
+          <input name="operator" value="${escapeHtml(a.operator || '')}" placeholder="负责人姓名" />
+        </div>
+      </div>
+      <div class="form-field full" style="margin-top:14px;">
+        <label>违规风控备注</label>
+        <textarea name="riskNote" placeholder="记录历史违规、限流情况、敏感词风险等...">${escapeHtml(a.riskNote || '')}</textarea>
+      </div>
+    </form>
+  `;
+
+  const footer = `
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn" onclick="document.getElementById('account-form').requestSubmit()">${isEdit ? '保存修改' : '创建账号'}</button>
+  `;
+
+  openModal(isEdit ? '编辑账号档案' : '新增账号档案', isEdit ? '修改账号基础信息' : '登记一个新的矩阵账号', body, footer);
+}
+
+function saveAccount(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form));
+  data.followerBase = data.followerBase ? Number(data.followerBase) : null;
+
+  if (editContext.id) {
+    const idx = state.accounts.findIndex(x => x.id === editContext.id);
+    if (idx >= 0) {
+      state.accounts[idx] = { ...state.accounts[idx], ...data, updatedAt: now() };
+      toast('账号已更新');
+    }
+  } else {
+    state.accounts.push({ id: uid(), ...data, createdAt: now(), updatedAt: now() });
+    toast('账号已创建');
+  }
+  saveState();
+  updateNavCounts();
+  closeModal();
+  renderAccounts();
+}
+
+function deleteAccount(id) {
+  const a = state.accounts.find(x => x.id === id);
+  if (!a) return;
+  if (!confirm(`确认删除账号「${a.name}」？\n该操作不可撤销，但关联的计划/排期/复盘记录会保留。`)) return;
+  state.accounts = state.accounts.filter(x => x.id !== id);
+  saveState();
+  updateNavCounts();
+  renderAccounts();
+  toast('账号已删除');
+}
+
+/* ============================================================
+   PAGE 2 · Strategy
+============================================================ */
+function renderStrategy() {
+  const container = document.getElementById('strategy-container');
+
+  if (state.strategies.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">S</div>
+        <div class="empty-title">尚无策略版本</div>
+        <div class="empty-desc">建立第一份季度矩阵策略，明确账号分工、导流逻辑与差异化方案。</div>
+        <button class="btn" onclick="openStrategyModal()">+ 新建策略版本</button>
+      </div>`;
+    return;
+  }
+
+  if (!currentStrategyId || !state.strategies.find(s => s.id === currentStrategyId)) {
+    currentStrategyId = state.strategies[state.strategies.length - 1].id;
+  }
+  const s = state.strategies.find(x => x.id === currentStrategyId);
+
+  const versionChips = state.strategies
+    .slice().reverse()
+    .map(v => `
+      <div class="version-chip ${v.id === currentStrategyId ? 'active' : ''}" onclick="switchStrategy('${v.id}')">
+        <span>${escapeHtml(v.versionName)}</span>
+        <span class="v-date">${escapeHtml(v.quarter)}</span>
+      </div>
+    `).join('');
+
+  container.innerHTML = `
+    <div class="version-list">
+      ${versionChips}
+      <button class="btn btn-ghost btn-sm" onclick="duplicateStrategy('${s.id}')">复制此版本</button>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div class="serif" style="font-size:22px;font-weight:500;letter-spacing:-0.01em;">${escapeHtml(s.versionName)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;">
+          ${escapeHtml(s.quarter)} · 创建于 ${fmtDate(s.createdAt, true)}${s.updatedAt ? ' · 更新于 ' + fmtDate(s.updatedAt, true) : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="openStrategyModal('${s.id}')">编辑</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStrategy('${s.id}')">删除</button>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-title"><span class="num">01</span>整体矩阵布局</div>
+      <div class="section-block-desc">描述矩阵内账号的整体架构与组合方式</div>
+      <div class="text-content ${s.layout ? '' : 'empty-text'}">${escapeHtml(s.layout || '尚未填写')}</div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-title"><span class="num">02</span>各账号分工策略</div>
+      <div class="section-block-desc">明确每个账号在矩阵中承担的角色与任务</div>
+      <div class="text-content ${s.division ? '' : 'empty-text'}">${escapeHtml(s.division || '尚未填写')}</div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-title"><span class="num">03</span>账号互相导流逻辑</div>
+      <div class="section-block-desc">账号之间的流量引导路径与协作机制</div>
+      <div class="text-content ${s.crossPromotion ? '' : 'empty-text'}">${escapeHtml(s.crossPromotion || '尚未填写')}</div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-title"><span class="num">04</span>内容差异化方案</div>
+      <div class="section-block-desc">避免账号内容同质化的差异化策略</div>
+      <div class="text-content ${s.differentiation ? '' : 'empty-text'}">${escapeHtml(s.differentiation || '尚未填写')}</div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-title"><span class="num">05</span>整体运营打法</div>
+      <div class="section-block-desc">阶段性运营节奏与重点动作</div>
+      <div class="text-content ${s.overallPlay ? '' : 'empty-text'}">${escapeHtml(s.overallPlay || '尚未填写')}</div>
+    </div>
+  `;
+}
+
+function switchStrategy(id) {
+  currentStrategyId = id;
+  renderStrategy();
+}
+
+function openStrategyModal(id = null) {
+  editContext = { type: 'strategy', id };
+  const s = id ? state.strategies.find(x => x.id === id) : {};
+  const isEdit = !!id;
+
+  const body = `
+    <form id="strategy-form" onsubmit="saveStrategy(event)">
+      <div class="form-row">
+        <div class="form-field">
+          <label>版本名称 <span class="req">*</span></label>
+          <input name="versionName" required value="${escapeHtml(s.versionName || '')}" placeholder="例如：2026 Q1 矩阵策略 V1" />
+        </div>
+        <div class="form-field">
+          <label>适用季度 <span class="req">*</span></label>
+          <input name="quarter" required value="${escapeHtml(s.quarter || '')}" placeholder="例如：2026 Q1 / 2026年3月" />
+        </div>
+      </div>
+
+      <div class="form-field full" style="margin-top:8px;">
+        <label>整体矩阵布局</label>
+        <textarea name="layout" placeholder="描述矩阵的整体架构，例如：3个涨粉号+2个带货号+1个品牌号...">${escapeHtml(s.layout || '')}</textarea>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>各账号分工策略</label>
+        <textarea name="division" placeholder="逐个账号说明其角色定位与核心任务...">${escapeHtml(s.division || '')}</textarea>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>账号互相导流逻辑</label>
+        <textarea name="crossPromotion" placeholder="说明账号之间的导流路径、@提醒策略、评论区联动等...">${escapeHtml(s.crossPromotion || '')}</textarea>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>内容差异化方案</label>
+        <textarea name="differentiation" placeholder="明确各账号选题/风格/受众的差异化，避免同质化...">${escapeHtml(s.differentiation || '')}</textarea>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>整体运营打法</label>
+        <textarea name="overallPlay" placeholder="阶段性运营节奏、资源投放重心、关键动作...">${escapeHtml(s.overallPlay || '')}</textarea>
+      </div>
+    </form>
+  `;
+
+  const footer = `
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn" onclick="document.getElementById('strategy-form').requestSubmit()">${isEdit ? '保存修改' : '创建版本'}</button>
+  `;
+
+  openModal(isEdit ? '编辑策略版本' : '新建策略版本', isEdit ? '修改矩阵策略内容' : '创建一份新的季度策略版本', body, footer, true);
+}
+
+function saveStrategy(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+
+  if (editContext.id) {
+    const idx = state.strategies.findIndex(x => x.id === editContext.id);
+    if (idx >= 0) {
+      state.strategies[idx] = { ...state.strategies[idx], ...data, updatedAt: now() };
+      toast('策略已更新');
+    }
+  } else {
+    const newS = { id: uid(), ...data, createdAt: now(), updatedAt: now() };
+    state.strategies.push(newS);
+    currentStrategyId = newS.id;
+    toast('策略版本已创建');
+  }
+  saveState();
+  updateNavCounts();
+  closeModal();
+  renderStrategy();
+}
+
+function duplicateStrategy(id) {
+  const s = state.strategies.find(x => x.id === id);
+  if (!s) return;
+  const copy = {
+    ...s,
+    id: uid(),
+    versionName: s.versionName + ' (副本)',
+    createdAt: now(),
+    updatedAt: now()
+  };
+  state.strategies.push(copy);
+  currentStrategyId = copy.id;
+  saveState();
+  updateNavCounts();
+  renderStrategy();
+  toast('已复制策略版本');
+}
+
+function deleteStrategy(id) {
+  const s = state.strategies.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm(`确认删除策略版本「${s.versionName}」？此操作不可撤销。`)) return;
+  state.strategies = state.strategies.filter(x => x.id !== id);
+  if (currentStrategyId === id) currentStrategyId = state.strategies.length > 0 ? state.strategies[state.strategies.length - 1].id : null;
+  saveState();
+  updateNavCounts();
+  renderStrategy();
+  toast('策略已删除');
+}
+
+/* ============================================================
+   PAGE 3 · Plans
+============================================================ */
+function renderPlans() {
+  refreshAccountSelectors();
+  const periodType = document.getElementById('filter-plan-period')?.value || '';
+  const status = document.getElementById('filter-plan-status')?.value || '';
+  const accountId = document.getElementById('filter-plan-account')?.value || '';
+
+  let list = state.plans.filter(p => {
+    if (periodType && p.periodType !== periodType) return false;
+    if (status && p.status !== status) return false;
+    if (accountId && p.accountId !== accountId) return false;
+    return true;
+  });
+
+  // sort by createdAt desc
+  list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+  const container = document.getElementById('plans-list');
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">P</div>
+        <div class="empty-title">暂无运营计划</div>
+        <div class="empty-desc">按月或季度创建运营计划，绑定账号、设定目标与里程碑。</div>
+        <button class="btn" onclick="openPlanModal()">+ 新建计划</button>
+      </div>`;
+    return;
+  }
+
+  const accountName = id => {
+    const a = state.accounts.find(x => x.id === id);
+    return a ? a.name : '（已删除账号）';
+  };
+
+  const statusBadge = s => {
+    const map = {
+      '进行中': 'badge-success',
+      '已完成': 'badge-dark',
+      '已归档': 'badge-muted'
+    };
+    return `<span class="badge ${map[s] || 'badge-muted'}">${escapeHtml(s || '进行中')}</span>`;
+  };
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>周期</th>
+            <th>绑定账号</th>
+            <th>涨粉目标</th>
+            <th>转化目标</th>
+            <th>投流预算</th>
+            <th>活动安排</th>
+            <th>里程碑</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(p => `
+            <tr>
+              <td>
+                <div class="cell-main">${escapeHtml(p.periodLabel)}</div>
+                <div class="cell-sub">${escapeHtml(p.periodType || '')}</div>
+              </td>
+              <td>${escapeHtml(accountName(p.accountId))}</td>
+              <td class="cell-num">${p.followerGoal ? Number(p.followerGoal).toLocaleString() : '—'}</td>
+              <td class="cell-num">${p.conversionGoal ? Number(p.conversionGoal).toLocaleString() : '—'}</td>
+              <td class="cell-num">${p.budget ? '¥' + Number(p.budget).toLocaleString() : '—'}</td>
+              <td style="max-width:240px;">
+                ${p.activities ? `<div style="font-size:12.5px;white-space:pre-wrap;line-height:1.5;">${escapeHtml(p.activities)}</div>` : '<span style="color:var(--subtle);">—</span>'}
+              </td>
+              <td style="max-width:240px;">
+                ${p.milestones ? `<div style="font-size:12.5px;white-space:pre-wrap;line-height:1.5;">${escapeHtml(p.milestones)}</div>` : '<span style="color:var(--subtle);">—</span>'}
+              </td>
+              <td>${statusBadge(p.status)}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn btn-ghost btn-xs" onclick="openPlanModal('${p.id}')">编辑</button>
+                  ${p.status !== '已完成' && p.status !== '已归档' ? `<button class="btn btn-xs" onclick="completePlan('${p.id}')">完成</button>` : ''}
+                  <button class="btn btn-danger btn-xs" onclick="deletePlan('${p.id}')">删除</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--subtle);font-family:'JetBrains Mono',monospace;">
+      共 ${list.length} / ${state.plans.length} 条计划 · 历史全部自动存档
+    </div>
+  `;
+}
+
+function openPlanModal(id = null) {
+  editContext = { type: 'plan', id };
+  const p = id ? state.plans.find(x => x.id === id) : {};
+  const isEdit = !!id;
+
+  if (state.accounts.length === 0) {
+    toast('请先在「账号资产档案」中创建账号');
+    navigateTo('accounts');
+    return;
+  }
+
+  const accountOpts = state.accounts.map(a =>
+    `<option value="${a.id}" ${p.accountId === a.id ? 'selected' : ''}>${escapeHtml(a.name)} · ${escapeHtml(a.platform || '')}</option>`
+  ).join('');
+
+  const body = `
+    <form id="plan-form" onsubmit="savePlan(event)">
+      <div class="form-row three">
+        <div class="form-field">
+          <label>周期类型 <span class="req">*</span></label>
+          <select name="periodType" required>
+            <option value="">请选择</option>
+            <option value="月度" ${p.periodType === '月度' ? 'selected' : ''}>月度</option>
+            <option value="季度" ${p.periodType === '季度' ? 'selected' : ''}>季度</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>周期标签 <span class="req">*</span></label>
+          <input name="periodLabel" required value="${escapeHtml(p.periodLabel || '')}" placeholder="例如：2026年3月 / 2026 Q1" />
+        </div>
+        <div class="form-field">
+          <label>状态</label>
+          <select name="status">
+            <option value="进行中" ${p.status === '进行中' || !p.status ? 'selected' : ''}>进行中</option>
+            <option value="已完成" ${p.status === '已完成' ? 'selected' : ''}>已完成</option>
+            <option value="已归档" ${p.status === '已归档' ? 'selected' : ''}>已归档</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>绑定账号 <span class="req">*</span></label>
+        <select name="accountId" required>
+          <option value="">请选择账号</option>
+          ${accountOpts}
+        </select>
+      </div>
+
+      <div class="form-row three" style="margin-top:14px;">
+        <div class="form-field">
+          <label>阶段涨粉目标</label>
+          <input name="followerGoal" type="number" min="0" value="${p.followerGoal || ''}" placeholder="例如：5000" />
+        </div>
+        <div class="form-field">
+          <label>转化目标</label>
+          <input name="conversionGoal" type="number" min="0" value="${p.conversionGoal || ''}" placeholder="例如：200" />
+        </div>
+        <div class="form-field">
+          <label>投流预算 (元)</label>
+          <input name="budget" type="number" min="0" value="${p.budget || ''}" placeholder="例如：10000" />
+        </div>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>活动安排</label>
+        <textarea name="activities" placeholder="本周期计划的重要活动、节点动作...">${escapeHtml(p.activities || '')}</textarea>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>里程碑</label>
+        <textarea name="milestones" placeholder="关键时间节点与目标达成标准...">${escapeHtml(p.milestones || '')}</textarea>
+      </div>
+    </form>
+  `;
+
+  const footer = `
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn" onclick="document.getElementById('plan-form').requestSubmit()">${isEdit ? '保存修改' : '创建计划'}</button>
+  `;
+
+  openModal(isEdit ? '编辑运营计划' : '新建运营计划', isEdit ? '修改计划详情' : '创建一个新的周期运营计划', body, footer, true);
+}
+
+function savePlan(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  data.followerGoal = data.followerGoal ? Number(data.followerGoal) : null;
+  data.conversionGoal = data.conversionGoal ? Number(data.conversionGoal) : null;
+  data.budget = data.budget ? Number(data.budget) : null;
+
+  if (editContext.id) {
+    const idx = state.plans.findIndex(x => x.id === editContext.id);
+    if (idx >= 0) {
+      state.plans[idx] = { ...state.plans[idx], ...data, updatedAt: now() };
+      toast('计划已更新');
+    }
+  } else {
+    state.plans.push({ id: uid(), ...data, createdAt: now(), updatedAt: now() });
+    toast('计划已创建');
+  }
+  saveState();
+  updateNavCounts();
+  closeModal();
+  renderPlans();
+}
+
+function completePlan(id) {
+  const idx = state.plans.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  state.plans[idx].status = '已完成';
+  state.plans[idx].updatedAt = now();
+  saveState();
+  renderPlans();
+  toast('计划已标记为完成并存档');
+}
+
+function deletePlan(id) {
+  const p = state.plans.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`确认删除计划「${p.periodLabel}」？此操作不可撤销。`)) return;
+  state.plans = state.plans.filter(x => x.id !== id);
+  saveState();
+  updateNavCounts();
+  renderPlans();
+  toast('计划已删除');
+}
+
+/* ============================================================
+   PAGE 4 · Schedule
+============================================================ */
+/* ===== Date Picker State & Logic ===== */
+let datePickerState = {
+  mode: 'range',
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  startDate: '',
+  endDate: '',
+  target: 'sched'
+};
+
+function toggleDatePicker(target) {
+  datePickerState.target = target;
+  const startEl = document.getElementById('filter-sched-date-start-display');
+  const endEl = document.getElementById('filter-sched-date-end-display');
+  datePickerState.startDate = startEl.dataset.value || '';
+  datePickerState.endDate = endEl.dataset.value || '';
+  document.getElementById('date-picker-overlay').classList.add('active');
+  renderDatePickerCalendar();
+}
+
+function closeDatePicker() {
+  document.getElementById('date-picker-overlay').classList.remove('active');
+}
+
+function setDatePickerMode(mode) {
+  datePickerState.mode = mode;
+  document.querySelectorAll('.date-picker-tab').forEach(t => t.classList.toggle('active', t.textContent.includes(mode === 'range' ? '范围' : '日期')));
+  renderDatePickerCalendar();
+}
+
+function changeDatePickerMonth(delta) {
+  datePickerState.month += delta;
+  if (datePickerState.month > 11) {
+    datePickerState.month = 0;
+    datePickerState.year++;
+  } else if (datePickerState.month < 0) {
+    datePickerState.month = 11;
+    datePickerState.year--;
+  }
+  renderDatePickerCalendar();
+}
+
+function renderDatePickerCalendar() {
+  const { year, month, startDate, endDate, mode } = datePickerState;
+  document.getElementById('date-picker-month-year').textContent = `${year}年 ${month + 1}月`;
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const prevLastDay = new Date(year, month, 0);
+  const startDay = firstDay.getDay();
+  const days = [];
+
+  for (let i = startDay - 1; i >= 0; i--) {
+    days.push({ day: prevLastDay.getDate() - i, month: month - 1, otherMonth: true });
+  }
+  for (let i = 1; i <= lastDay.getDate(); i++) {
+    days.push({ day: i, month, otherMonth: false });
+  }
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    days.push({ day: i, month: month + 1, otherMonth: true });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const isInRange = (day, m, y) => {
+    if (!startDate || !endDate) return false;
+    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return dateStr >= startDate && dateStr <= endDate;
+  };
+
+  const isStart = (day, m, y) => {
+    if (!startDate) return false;
+    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return dateStr === startDate;
+  };
+
+  const isEnd = (day, m, y) => {
+    if (!endDate) return false;
+    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return dateStr === endDate;
+  };
+
+  const html = days.map((d, idx) => {
+    let actualMonth = d.month;
+    let actualYear = year;
+    if (actualMonth < 0) { actualMonth = 11; actualYear--; }
+    if (actualMonth > 11) { actualMonth = 0; actualYear++; }
+    const dateStr = `${actualYear}-${String(actualMonth + 1).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
+    const isToday = dateStr === today;
+    const startMatch = isStart(d.day, actualMonth, actualYear);
+    const endMatch = isEnd(d.day, actualMonth, actualYear);
+    const inRange = isInRange(d.day, actualMonth, actualYear);
+
+    let classes = 'date-picker-day';
+    if (d.otherMonth) classes += ' other-month';
+    if (isToday) classes += ' today';
+    if (startMatch) classes += ' selected-start';
+    if (endMatch) classes += ' selected-end';
+    if (inRange && !startMatch && !endMatch) classes += ' in-range';
+
+    return `<div class="${classes}" onclick="pickDate('${dateStr}')">${d.day}</div>`;
+  }).join('');
+
+  document.getElementById('date-picker-days').innerHTML = html;
+  updateDatePickerSelection();
+}
+
+function pickDate(dateStr) {
+  const { mode, startDate, endDate } = datePickerState;
+
+  if (mode === 'single') {
+    datePickerState.startDate = dateStr;
+    datePickerState.endDate = dateStr;
+  } else {
+    if (!startDate) {
+      datePickerState.startDate = dateStr;
+      datePickerState.endDate = '';
+    } else if (!endDate) {
+      if (dateStr >= startDate) {
+        datePickerState.endDate = dateStr;
+      } else {
+        datePickerState.endDate = startDate;
+        datePickerState.startDate = dateStr;
+      }
+    } else {
+      datePickerState.startDate = dateStr;
+      datePickerState.endDate = '';
+    }
+  }
+  renderDatePickerCalendar();
+}
+
+function updateDatePickerSelection() {
+  const { startDate, endDate, mode } = datePickerState;
+  const el = document.getElementById('date-picker-selection');
+  if (!startDate) {
+    el.textContent = '请选择日期';
+  } else if (!endDate) {
+    el.textContent = `开始：${startDate}`;
+  } else {
+    el.textContent = `${startDate} ~ ${endDate}`;
+  }
+}
+
+function applyDatePicker() {
+  const { startDate, endDate } = datePickerState;
+  const startEl = document.getElementById('filter-sched-date-start-display');
+  const endEl = document.getElementById('filter-sched-date-end-display');
+
+  if (startDate) {
+    startEl.textContent = startDate;
+    startEl.dataset.value = startDate;
+  } else {
+    startEl.textContent = '选择日期';
+    startEl.dataset.value = '';
+  }
+
+  if (endDate) {
+    endEl.textContent = endDate;
+    endEl.dataset.value = endDate;
+  } else {
+    endEl.textContent = '选择日期';
+    endEl.dataset.value = '';
+  }
+
+  closeDatePicker();
+  renderSchedule();
+}
+
+function clearSchedDateFilter() {
+  const startEl = document.getElementById('filter-sched-date-start-display');
+  const endEl = document.getElementById('filter-sched-date-end-display');
+  startEl.textContent = '选择日期';
+  startEl.dataset.value = '';
+  endEl.textContent = '选择日期';
+  endEl.dataset.value = '';
+  renderSchedule();
+  toast('日期筛选已清空');
+}
+
+function renderSchedule() {
+  refreshAccountSelectors();
+  const accountId = document.getElementById('filter-sched-account')?.value || '';
+  const status = document.getElementById('filter-sched-status')?.value || '';
+  const type = document.getElementById('filter-sched-type')?.value || '';
+  const dateStart = document.getElementById('filter-sched-date-start-display')?.dataset.value || '';
+  const dateEnd = document.getElementById('filter-sched-date-end-display')?.dataset.value || '';
+
+  let list = state.schedules.filter(s => {
+    if (accountId && s.accountId !== accountId) return false;
+    if (status && s.status !== status) return false;
+    if (type && s.contentType !== type) return false;
+    if (s.publishTime) {
+      const pubDate = s.publishTime.slice(0, 10);
+      if (dateStart && pubDate < dateStart) return false;
+      if (dateEnd && pubDate > dateEnd) return false;
+    } else {
+      // 没有设置发布时间的排期：如果用户选了日期范围，则排除
+      if (dateStart || dateEnd) return false;
+    }
+    return true;
+  });
+
+  // group by account
+  const groups = {};
+  list.forEach(s => {
+    const key = s.accountId || 'unknown';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(s);
+  });
+
+  // sort by publishTime within group
+  Object.values(groups).forEach(arr => {
+    arr.sort((a, b) => (a.publishTime || '').localeCompare(b.publishTime || ''));
+  });
+
+  const container = document.getElementById('schedule-container');
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">C</div>
+        <div class="empty-title">暂无内容排期</div>
+        <div class="empty-desc">按账号分类管理内容选题、发布时间与状态，让发布节奏一目了然。</div>
+        <button class="btn" onclick="openScheduleModal()">+ 新增排期</button>
+      </div>`;
+    return;
+  }
+
+  const accountName = id => {
+    const a = state.accounts.find(x => x.id === id);
+    return a ? a.name : '（已删除账号）';
+  };
+
+  const statusBadge = s => {
+    const map = {
+      '草稿': 'badge-muted',
+      '待发': 'badge-warning',
+      '已发布': 'badge-dark'
+    };
+    return `<span class="badge ${map[s] || 'badge-muted'}">${escapeHtml(s || '草稿')}</span>`;
+  };
+
+  // 桌面端表格视图（每行加"详情"按钮，长脚本可弹窗完整查看）
+  let desktopHtml = '';
+  Object.entries(groups).forEach(([accId, items]) => {
+    desktopHtml += `
+      <div class="group-section schedule-desktop-view">
+        <div class="group-header">
+          <h3>${escapeHtml(accountName(accId))}</h3>
+          <span class="group-count">${items.length} 条排期</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>选题</th>
+                <th>类型</th>
+                <th>预计发布时间</th>
+                <th>文案/封面要点</th>
+                <th>话题</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(s => `
+                <tr>
+                  <td><div class="cell-main">${escapeHtml(s.topic)}</div></td>
+                  <td>${s.contentType ? `<span class="badge">${escapeHtml(s.contentType)}</span>` : '—'}</td>
+                  <td class="cell-num">${s.publishTime ? fmtDate(s.publishTime) : '<span style="color:var(--subtle);">未设定</span>'}</td>
+                  <td style="max-width:280px;">
+                    ${s.copyPoints
+                      ? `<div style="font-size:12.5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;">${escapeHtml(s.copyPoints)}</div>
+                         <button class="btn btn-ghost btn-xs" style="margin-top:6px;padding:2px 8px;" onclick="viewScheduleDetail('${s.id}')">查看完整脚本 →</button>`
+                      : '<span style="color:var(--subtle);">—</span>'}
+                  </td>
+                  <td>${s.hashtags ? `<div style="font-size:12px;color:var(--muted);">${escapeHtml(s.hashtags)}</div>` : '—'}</td>
+                  <td>${statusBadge(s.status)}</td>
+                  <td>
+                    <div class="row-actions">
+                      <button class="btn btn-ghost btn-xs" onclick="viewScheduleDetail('${s.id}')">详情</button>
+                      ${s.status !== '已发布' ? `<button class="btn btn-xs" onclick="cycleScheduleStatus('${s.id}')">推进</button>` : ''}
+                      <button class="btn btn-ghost btn-xs" onclick="openScheduleModal('${s.id}')">编辑</button>
+                      <button class="btn btn-danger btn-xs" onclick="deleteSchedule('${s.id}')">删除</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  });
+
+  // 手机端卡片视图（无需横向滑动，长脚本可点击展开）
+  let mobileHtml = '';
+  Object.entries(groups).forEach(([accId, items]) => {
+    mobileHtml += `
+      <div class="group-section schedule-mobile-view">
+        <div class="group-header">
+          <h3>${escapeHtml(accountName(accId))}</h3>
+          <span class="group-count">${items.length} 条</span>
+        </div>
+        ${items.map(s => `
+          <div class="sched-card" onclick="viewScheduleDetail('${s.id}')">
+            <div class="sched-card-top">
+              <div class="sched-card-topic">${escapeHtml(s.topic)}</div>
+              ${statusBadge(s.status)}
+            </div>
+            <div class="sched-card-meta">
+              ${s.contentType ? `<span class="badge">${escapeHtml(s.contentType)}</span>` : ''}
+              <span class="sched-card-date">${s.publishTime ? fmtDate(s.publishTime) : '未设定时间'}</span>
+            </div>
+            ${s.copyPoints
+              ? `<div class="sched-card-preview">${escapeHtml(s.copyPoints.slice(0, 80))}${s.copyPoints.length > 80 ? '...' : ''}</div>`
+              : ''}
+            ${s.hashtags ? `<div class="sched-card-tags">${escapeHtml(s.hashtags)}</div>` : ''}
+            <div class="sched-card-actions" onclick="event.stopPropagation();">
+              ${s.status !== '已发布' ? `<button class="btn btn-xs" onclick="cycleScheduleStatus('${s.id}')">推进状态</button>` : ''}
+              <button class="btn btn-ghost btn-xs" onclick="openScheduleModal('${s.id}')">编辑</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteSchedule('${s.id}')">删除</button>
+            </div>
+            <div class="sched-card-hint">点击卡片查看完整脚本 →</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  });
+
+  container.innerHTML = desktopHtml + mobileHtml + `
+    <div style="margin-top:12px;font-size:12px;color:var(--subtle);font-family:'JetBrains Mono',monospace;">
+      共 ${list.length} / ${state.schedules.length} 条排期 · 按 ${Object.keys(groups).length} 个账号分组
+    </div>
+  `;
+}
+
+// 查看排期详情（完整脚本弹窗，桌面/手机通用）
+function viewScheduleDetail(id) {
+  const s = state.schedules.find(x => x.id === id);
+  if (!s) return;
+  const accountName = (() => {
+    const a = state.accounts.find(x => x.id === s.accountId);
+    return a ? a.name : '（已删除账号）';
+  })();
+
+  const body = `
+    <div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div class="serif" style="font-size:22px;font-weight:500;letter-spacing:-0.01em;margin-bottom:6px;line-height:1.3;">${escapeHtml(s.topic)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;">
+        <span>${escapeHtml(accountName)}</span>
+        <span>·</span>
+        ${s.contentType ? `<span class="badge">${escapeHtml(s.contentType)}</span>` : ''}
+        <span>·</span>
+        <span>${s.publishTime ? fmtDate(s.publishTime) : '未设定时间'}</span>
+        <span>·</span>
+        ${(() => {
+          const map = { '草稿': 'badge-muted', '待发': 'badge-warning', '已发布': 'badge-dark' };
+          return `<span class="badge ${map[s.status] || 'badge-muted'}">${escapeHtml(s.status || '草稿')}</span>`;
+        })()}
+      </div>
+    </div>
+
+    ${s.hashtags ? `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px;">话题 / 标签</div>
+        <div style="font-size:13px;color:var(--muted);">${escapeHtml(s.hashtags)}</div>
+      </div>
+    ` : ''}
+
+    <div>
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px;">文案 / 封面要点（完整脚本）</div>
+      <div class="script-content">${escapeHtml(s.copyPoints || '（暂未填写脚本内容）')}</div>
+    </div>
+  `;
+
+  const footer = `
+    <button class="btn btn-ghost" onclick="closeModal()">关闭</button>
+    <button class="btn" onclick="closeModal();setTimeout(()=>openScheduleModal('${s.id}'),100);">编辑此排期</button>
+  `;
+
+  openModal('排期详情', '完整脚本与所有字段', body, footer, true);
+}
+
+function openScheduleModal(id = null) {
+  editContext = { type: 'schedule', id };
+  const s = id ? state.schedules.find(x => x.id === id) : {};
+  const isEdit = !!id;
+
+  if (state.accounts.length === 0) {
+    toast('请先在「账号资产档案」中创建账号');
+    navigateTo('accounts');
+    return;
+  }
+
+  const accountOpts = state.accounts.map(a =>
+    `<option value="${a.id}" ${s.accountId === a.id ? 'selected' : ''}>${escapeHtml(a.name)} · ${escapeHtml(a.platform || '')}</option>`
+  ).join('');
+
+  const body = `
+    <form id="schedule-form" onsubmit="saveSchedule(event)">
+      <div class="form-row">
+        <div class="form-field">
+          <label>绑定账号 <span class="req">*</span></label>
+          <select name="accountId" required>
+            <option value="">请选择账号</option>
+            ${accountOpts}
+          </select>
+        </div>
+        <div class="form-field">
+          <label>内容类型</label>
+          <select name="contentType">
+            <option value="">请选择</option>
+            ${['短视频','图文','直播','长视频','合集','其他'].map(t =>
+              `<option value="${t}" ${s.contentType === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>选题 <span class="req">*</span></label>
+        <input name="topic" required value="${escapeHtml(s.topic || '')}" placeholder="内容选题或标题" />
+      </div>
+
+      <div class="form-row" style="margin-top:14px;">
+        <div class="form-field">
+          <label>预计发布时间</label>
+          <input name="publishTime" type="date" value="${s.publishTime ? s.publishTime.slice(0,10) : ''}" />
+        </div>
+        <div class="form-field">
+          <label>状态</label>
+          <select name="status">
+            <option value="草稿" ${s.status === '草稿' || !s.status ? 'selected' : ''}>草稿</option>
+            <option value="待发" ${s.status === '待发' ? 'selected' : ''}>待发</option>
+            <option value="已发布" ${s.status === '已发布' ? 'selected' : ''}>已发布</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>文案/封面要点</label>
+        <textarea name="copyPoints" placeholder="核心文案钩子、封面设计要点、关键卖点...">${escapeHtml(s.copyPoints || '')}</textarea>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>话题 / 标签</label>
+        <input name="hashtags" value="${escapeHtml(s.hashtags || '')}" placeholder="例如：#职场成长 #自媒体运营" />
+      </div>
+    </form>
+  `;
+
+  const footer = `
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn" onclick="document.getElementById('schedule-form').requestSubmit()">${isEdit ? '保存修改' : '创建排期'}</button>
+  `;
+
+  openModal(isEdit ? '编辑内容排期' : '新增内容排期', isEdit ? '修改排期详情' : '为账号添加一条内容排期', body, footer);
+}
+
+function saveSchedule(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  if (data.publishTime) data.publishTime = new Date(data.publishTime).toISOString();
+
+  if (editContext.id) {
+    const idx = state.schedules.findIndex(x => x.id === editContext.id);
+    if (idx >= 0) {
+      state.schedules[idx] = { ...state.schedules[idx], ...data, updatedAt: now() };
+      toast('排期已更新');
+    }
+  } else {
+    state.schedules.push({ id: uid(), ...data, createdAt: now(), updatedAt: now() });
+    toast('排期已创建');
+  }
+  saveState();
+  updateNavCounts();
+  closeModal();
+  renderSchedule();
+}
+
+function cycleScheduleStatus(id) {
+  const idx = state.schedules.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const s = state.schedules[idx];
+  const flow = { '草稿': '待发', '待发': '已发布', '已发布': '已发布' };
+  s.status = flow[s.status] || '待发';
+  s.updatedAt = now();
+  saveState();
+  renderSchedule();
+  toast(`状态已更新为「${s.status}」`);
+}
+
+function deleteSchedule(id) {
+  const s = state.schedules.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm(`确认删除排期「${s.topic}」？此操作不可撤销。`)) return;
+  state.schedules = state.schedules.filter(x => x.id !== id);
+  saveState();
+  updateNavCounts();
+  renderSchedule();
+  toast('排期已删除');
+}
+
+/* ============================================================
+   PAGE 5 · Review
+============================================================ */
+function renderReview() {
+  refreshAccountSelectors();
+  const accountId = document.getElementById('filter-review-account')?.value || '';
+
+  let list = state.reviews.filter(r => {
+    if (accountId && r.accountId !== accountId) return false;
+    return true;
+  });
+  list.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+
+  const container = document.getElementById('review-container');
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">R</div>
+        <div class="empty-title">暂无复盘记录</div>
+        <div class="empty-desc">绑定账号录入周期数据，系统将自动计算涨粉与转化表现。</div>
+        <button class="btn" onclick="openReviewModal()">+ 新增复盘</button>
+      </div>`;
+    return;
+  }
+
+  const accountName = id => {
+    const a = state.accounts.find(x => x.id === id);
+    return a ? a.name : '（已删除账号）';
+  };
+
+  let html = '';
+  list.forEach(r => {
+    const followerGrowth = (r.endFollowers != null && r.startFollowers != null)
+      ? r.endFollowers - r.startFollowers : null;
+    const conversionGrowth = (r.endConversions != null && r.startConversions != null)
+      ? r.endConversions - r.startConversions : null;
+    const growthRate = (followerGrowth != null && r.startFollowers > 0)
+      ? (followerGrowth / r.startFollowers * 100).toFixed(1) : null;
+
+    const historyHtml = (r.editHistory && r.editHistory.length > 0) ? `
+      <div class="timeline">
+        ${r.editHistory.slice().reverse().map(h => `
+          <div class="timeline-item">
+            <div class="timeline-time">${fmtDate(h.time, true)}</div>
+            <div class="timeline-content">${escapeHtml(h.content)}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '<div style="font-size:12px;color:var(--subtle);font-style:italic;">暂无修改记录</div>';
+
+    html += `
+      <div class="section-block" style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+          <div>
+            <div class="serif" style="font-size:22px;font-weight:500;letter-spacing:-0.01em;">
+              ${escapeHtml(accountName(r.accountId))}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;">
+              ${escapeHtml(r.periodLabel || '未标注周期')} · 创建于 ${fmtDate(r.createdAt, true)}${r.updatedAt && r.updatedAt !== r.createdAt ? ' · 更新于 ' + fmtDate(r.updatedAt, true) : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="openReviewModal('${r.id}')">编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')">删除</button>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">周期涨粉</div>
+            <div class="stat-value ${followerGrowth === null ? '' : (followerGrowth >= 0 ? '' : '')}" style="${followerGrowth !== null && followerGrowth < 0 ? 'color:var(--danger);' : ''}">
+              ${followerGrowth !== null ? (followerGrowth >= 0 ? '+' : '') + followerGrowth.toLocaleString() : '—'}
+              ${growthRate ? `<span class="unit" style="color:${followerGrowth >= 0 ? 'var(--success)' : 'var(--danger)'};">${followerGrowth >= 0 ? '↑' : '↓'}${growthRate}%</span>` : ''}
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">期末粉丝</div>
+            <div class="stat-value">${r.endFollowers != null ? Number(r.endFollowers).toLocaleString() : '—'}</div>
+            <div class="stat-trend">期初 ${r.startFollowers != null ? Number(r.startFollowers).toLocaleString() : '—'}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">周期转化</div>
+            <div class="stat-value" style="${conversionGrowth !== null && conversionGrowth < 0 ? 'color:var(--danger);' : ''}">
+              ${conversionGrowth !== null ? (conversionGrowth >= 0 ? '+' : '') + conversionGrowth.toLocaleString() : '—'}
+            </div>
+            <div class="stat-trend">期初 ${r.startConversions != null ? Number(r.startConversions).toLocaleString() : '—'} → 期末 ${r.endConversions != null ? Number(r.endConversions).toLocaleString() : '—'}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">转化率</div>
+            <div class="stat-value">
+              ${(r.endConversions != null && r.endFollowers > 0)
+                ? (r.endConversions / r.endFollowers * 100).toFixed(2) + '<span class="unit">%</span>'
+                : '—'}
+            </div>
+            <div class="stat-trend">基于期末数据</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;" class="review-text-grid">
+          <div>
+            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px;">复盘结论</div>
+            <div class="text-content ${r.conclusion ? '' : 'empty-text'}">${escapeHtml(r.conclusion || '尚未填写')}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px;">下阶段策略调整</div>
+            <div class="text-content ${r.nextStrategy ? '' : 'empty-text'}">${escapeHtml(r.nextStrategy || '尚未填写')}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px;">修改记录</div>
+          ${historyHtml}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html + `
+    <div style="margin-top:12px;font-size:12px;color:var(--subtle);font-family:'JetBrains Mono',monospace;">
+      共 ${list.length} / ${state.reviews.length} 条复盘日志
+    </div>
+  `;
+
+  // mobile: stack text grid
+  if (window.innerWidth <= 768) {
+    container.querySelectorAll('.review-text-grid').forEach(g => g.style.gridTemplateColumns = '1fr');
+  }
+}
+
+function openReviewModal(id = null) {
+  editContext = { type: 'review', id };
+  const r = id ? state.reviews.find(x => x.id === id) : {};
+  const isEdit = !!id;
+
+  if (state.accounts.length === 0) {
+    toast('请先在「账号资产档案」中创建账号');
+    navigateTo('accounts');
+    return;
+  }
+
+  const accountOpts = state.accounts.map(a =>
+    `<option value="${a.id}" ${r.accountId === a.id ? 'selected' : ''}>${escapeHtml(a.name)} · ${escapeHtml(a.platform || '')}</option>`
+  ).join('');
+
+  const body = `
+    <form id="review-form" onsubmit="saveReview(event)">
+      <div class="form-row">
+        <div class="form-field">
+          <label>绑定账号 <span class="req">*</span></label>
+          <select name="accountId" required>
+            <option value="">请选择账号</option>
+            ${accountOpts}
+          </select>
+        </div>
+        <div class="form-field">
+          <label>周期标签 <span class="req">*</span></label>
+          <input name="periodLabel" required value="${escapeHtml(r.periodLabel || '')}" placeholder="例如：2026年3月 / 2026 Q1" />
+        </div>
+      </div>
+
+      <div style="margin-top:18px;padding:14px;background:var(--bg-subtle);border-radius:6px;">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;">期初数据</div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>期初粉丝数</label>
+            <input name="startFollowers" type="number" min="0" value="${r.startFollowers || ''}" placeholder="例如：12000" />
+          </div>
+          <div class="form-field">
+            <label>期初累计转化</label>
+            <input name="startConversions" type="number" min="0" value="${r.startConversions || ''}" placeholder="例如：300" />
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;padding:14px;background:var(--bg-subtle);border-radius:6px;">
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;">期末数据</div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>期末粉丝数</label>
+            <input name="endFollowers" type="number" min="0" value="${r.endFollowers || ''}" placeholder="例如：15800" />
+          </div>
+          <div class="form-field">
+            <label>期末累计转化</label>
+            <input name="endConversions" type="number" min="0" value="${r.endConversions || ''}" placeholder="例如：480" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>复盘结论</label>
+        <textarea name="conclusion" placeholder="本周期表现总结、亮点与问题分析...">${escapeHtml(r.conclusion || '')}</textarea>
+      </div>
+
+      <div class="form-field full" style="margin-top:14px;">
+        <label>下阶段策略调整</label>
+        <textarea name="nextStrategy" placeholder="基于复盘结论的下阶段策略调整方向...">${escapeHtml(r.nextStrategy || '')}</textarea>
+      </div>
+    </form>
+  `;
+
+  const footer = `
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn" onclick="document.getElementById('review-form').requestSubmit()">${isEdit ? '保存修改' : '创建复盘'}</button>
+  `;
+
+  openModal(isEdit ? '编辑复盘日志' : '新增复盘日志', isEdit ? '修改周期数据与结论' : '录入账号周期数据与复盘结论', body, footer, true);
+}
+
+function saveReview(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  ['startFollowers','endFollowers','startConversions','endConversions'].forEach(k => {
+    data[k] = data[k] ? Number(data[k]) : null;
+  });
+
+  if (editContext.id) {
+    const idx = state.reviews.findIndex(x => x.id === editContext.id);
+    if (idx >= 0) {
+      const old = state.reviews[idx];
+      const changes = [];
+      if (old.periodLabel !== data.periodLabel) changes.push(`周期标签：${old.periodLabel || '空'} → ${data.periodLabel}`);
+      if (old.startFollowers !== data.startFollowers) changes.push(`期初粉丝：${old.startFollowers ?? '空'} → ${data.startFollowers ?? '空'}`);
+      if (old.endFollowers !== data.endFollowers) changes.push(`期末粉丝：${old.endFollowers ?? '空'} → ${data.endFollowers ?? '空'}`);
+      if (old.startConversions !== data.startConversions) changes.push(`期初转化：${old.startConversions ?? '空'} → ${data.startConversions ?? '空'}`);
+      if (old.endConversions !== data.endConversions) changes.push(`期末转化：${old.endConversions ?? '空'} → ${data.endConversions ?? '空'}`);
+      if (old.conclusion !== data.conclusion) changes.push('复盘结论已修改');
+      if (old.nextStrategy !== data.nextStrategy) changes.push('下阶段策略已修改');
+
+      const history = old.editHistory || [];
+      if (changes.length > 0) {
+        history.push({
+          time: now(),
+          content: '修改字段：' + changes.join('；')
+        });
+      }
+
+      state.reviews[idx] = {
+        ...old, ...data,
+        editHistory: history,
+        updatedAt: now()
+      };
+      toast('复盘已更新');
+    }
+  } else {
+    state.reviews.push({
+      id: uid(),
+      ...data,
+      editHistory: [{ time: now(), content: '创建复盘日志' }],
+      createdAt: now(),
+      updatedAt: now()
+    });
+    toast('复盘已创建');
+  }
+  saveState();
+  updateNavCounts();
+  closeModal();
+  renderReview();
+}
+
+function deleteReview(id) {
+  const r = state.reviews.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm(`确认删除该账号在「${r.periodLabel}」的复盘日志？此操作不可撤销。`)) return;
+  state.reviews = state.reviews.filter(x => x.id !== id);
+  saveState();
+  updateNavCounts();
+  renderReview();
+  toast('复盘已删除');
+}
+
+/* ============================================================
+   Export / Import
+============================================================ */
+function exportPage(pageKey) {
+  let content = '';
+  let title = '';
+  switch (pageKey) {
+    case 'accounts':
+      title = '账号资产档案';
+      content = renderAccountsText();
+      break;
+    case 'strategy':
+      title = '矩阵策略规划';
+      content = renderStrategyText();
+      break;
+    case 'plans':
+      title = '周期运营计划表';
+      content = renderPlansText();
+      break;
+    case 'schedule':
+      title = '内容发布排期表';
+      content = renderScheduleText();
+      break;
+    case 'review':
+      title = '数据复盘日志';
+      content = renderReviewText();
+      break;
+  }
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '');
+  const filename = `${title}_备份_${stamp}.txt`;
+  downloadText(filename, content);
+  toast(`已导出：${filename}`);
+}
+
+function renderAccountsText() {
+  if (state.accounts.length === 0) return '（暂无账号数据）\n';
+  let out = '═══════════════════════════════════════\n';
+  out += '  多账号矩阵运营 · 账号资产档案\n';
+  out += '  导出时间：' + fmtDate(now(), true) + '\n';
+  out += '  账号总数：' + state.accounts.length + '\n';
+  out += '═══════════════════════════════════════\n\n';
+  state.accounts.forEach((a, i) => {
+    out += `【${i + 1}】${a.name}\n`;
+    out += `    平台：${a.platform || '—'}\n`;
+    out += `    定位：${a.positioning || '—'}\n`;
+    out += `    职能：${a.function || '—'}\n`;
+    out += `    目标人群：${a.audience || '—'}\n`;
+    out += `    变现方式：${a.monetization || '—'}\n`;
+    out += `    粉丝基数：${a.followerBase ? Number(a.followerBase).toLocaleString() : '—'}\n`;
+    out += `    账号等级：${a.level || '—'}\n`;
+    out += `    运营人：${a.operator || '—'}\n`;
+    out += `    风控备注：${a.riskNote || '—'}\n`;
+    out += `    创建时间：${fmtDate(a.createdAt, true)}\n\n`;
+  });
+  return out;
+}
+
+function renderStrategyText() {
+  if (state.strategies.length === 0) return '（暂无策略数据）\n';
+  let out = '═══════════════════════════════════════\n';
+  out += '  多账号矩阵运营 · 矩阵策略规划\n';
+  out += '  导出时间：' + fmtDate(now(), true) + '\n';
+  out += '  策略版本数：' + state.strategies.length + '\n';
+  out += '═══════════════════════════════════════\n\n';
+  state.strategies.forEach((s, i) => {
+    out += `━━━ 版本 ${i + 1} ━━━\n`;
+    out += `名称：${s.versionName}\n`;
+    out += `适用季度：${s.quarter}\n`;
+    out += `创建时间：${fmtDate(s.createdAt, true)}\n\n`;
+    out += `【整体矩阵布局】\n${s.layout || '（未填写）'}\n\n`;
+    out += `【各账号分工策略】\n${s.division || '（未填写）'}\n\n`;
+    out += `【账号互相导流逻辑】\n${s.crossPromotion || '（未填写）'}\n\n`;
+    out += `【内容差异化方案】\n${s.differentiation || '（未填写）'}\n\n`;
+    out += `【整体运营打法】\n${s.overallPlay || '（未填写）'}\n\n`;
+  });
+  return out;
+}
+
+function renderPlansText() {
+  if (state.plans.length === 0) return '（暂无计划数据）\n';
+  const accountName = id => {
+    const a = state.accounts.find(x => x.id === id);
+    return a ? a.name : '（已删除账号）';
+  };
+  let out = '═══════════════════════════════════════\n';
+  out += '  多账号矩阵运营 · 周期运营计划表\n';
+  out += '  导出时间：' + fmtDate(now(), true) + '\n';
+  out += '  计划总数：' + state.plans.length + '\n';
+  out += '═══════════════════════════════════════\n\n';
+  state.plans.forEach((p, i) => {
+    out += `━━━ 计划 ${i + 1} ━━━\n`;
+    out += `周期：${p.periodLabel}（${p.periodType || ''}）\n`;
+    out += `绑定账号：${accountName(p.accountId)}\n`;
+    out += `状态：${p.status || '进行中'}\n`;
+    out += `涨粉目标：${p.followerGoal ? Number(p.followerGoal).toLocaleString() : '—'}\n`;
+    out += `转化目标：${p.conversionGoal ? Number(p.conversionGoal).toLocaleString() : '—'}\n`;
+    out += `投流预算：${p.budget ? '¥' + Number(p.budget).toLocaleString() : '—'}\n`;
+    out += `活动安排：\n${p.activities || '（未填写）'}\n\n`;
+    out += `里程碑：\n${p.milestones || '（未填写）'}\n\n`;
+    out += `创建时间：${fmtDate(p.createdAt, true)}\n\n`;
+  });
+  return out;
+}
+
+function renderScheduleText() {
+  if (state.schedules.length === 0) return '（暂无排期数据）\n';
+  const accountName = id => {
+    const a = state.accounts.find(x => x.id === id);
+    return a ? a.name : '（已删除账号）';
+  };
+  let out = '═══════════════════════════════════════\n';
+  out += '  多账号矩阵运营 · 内容发布排期表\n';
+  out += '  导出时间：' + fmtDate(now(), true) + '\n';
+  out += '  排期总数：' + state.schedules.length + '\n';
+  out += '═══════════════════════════════════════\n\n';
+  // group by account
+  const groups = {};
+  state.schedules.forEach(s => {
+    const key = s.accountId || 'unknown';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(s);
+  });
+  Object.entries(groups).forEach(([accId, items]) => {
+    out += `▶ 账号：${accountName(accId)}（${items.length} 条）\n`;
+    items.sort((a, b) => (a.publishTime || '').localeCompare(b.publishTime || ''));
+    items.forEach((s, i) => {
+      out += `  [${i + 1}] ${s.topic}\n`;
+      out += `      类型：${s.contentType || '—'}\n`;
+      out += `      预计发布：${s.publishTime ? fmtDate(s.publishTime) : '未设定'}\n`;
+      out += `      状态：${s.status || '草稿'}\n`;
+      out += `      话题：${s.hashtags || '—'}\n`;
+      out += `      文案/封面要点：\n${s.copyPoints ? '        ' + s.copyPoints.replace(/\n/g, '\n        ') : '        （未填写）'}\n\n`;
+    });
+  });
+  return out;
+}
+
+function renderReviewText() {
+  if (state.reviews.length === 0) return '（暂无复盘数据）\n';
+  const accountName = id => {
+    const a = state.accounts.find(x => x.id === id);
+    return a ? a.name : '（已删除账号）';
+  };
+  let out = '═══════════════════════════════════════\n';
+  out += '  多账号矩阵运营 · 数据复盘日志\n';
+  out += '  导出时间：' + fmtDate(now(), true) + '\n';
+  out += '  复盘总数：' + state.reviews.length + '\n';
+  out += '═══════════════════════════════════════\n\n';
+  state.reviews.forEach((r, i) => {
+    const followerGrowth = (r.endFollowers != null && r.startFollowers != null) ? r.endFollowers - r.startFollowers : null;
+    const conversionGrowth = (r.endConversions != null && r.startConversions != null) ? r.endConversions - r.startConversions : null;
+    out += `━━━ 复盘 ${i + 1} ━━━\n`;
+    out += `账号：${accountName(r.accountId)}\n`;
+    out += `周期：${r.periodLabel || '—'}\n`;
+    out += `期初粉丝：${r.startFollowers ?? '—'}  →  期末粉丝：${r.endFollowers ?? '—'}\n`;
+    out += `周期涨粉：${followerGrowth !== null ? (followerGrowth >= 0 ? '+' : '') + followerGrowth.toLocaleString() : '—'}\n`;
+    out += `期初转化：${r.startConversions ?? '—'}  →  期末转化：${r.endConversions ?? '—'}\n`;
+    out += `周期转化：${conversionGrowth !== null ? (conversionGrowth >= 0 ? '+' : '') + conversionGrowth.toLocaleString() : '—'}\n\n`;
+    out += `【复盘结论】\n${r.conclusion || '（未填写）'}\n\n`;
+    out += `【下阶段策略调整】\n${r.nextStrategy || '（未填写）'}\n\n`;
+    if (r.editHistory && r.editHistory.length > 0) {
+      out += `【修改记录】\n`;
+      r.editHistory.forEach(h => {
+        out += `  · ${fmtDate(h.time, true)}  ${h.content}\n`;
+      });
+    }
+    out += `\n`;
+  });
+  return out;
+}
+
+function exportAll() {
+  const data = {
+    _meta: {
+      app: '多账号矩阵运营管理工作台',
+      version: '1.0',
+      exportedAt: now(),
+      counts: {
+        accounts: state.accounts.length,
+        strategies: state.strategies.length,
+        plans: state.plans.length,
+        schedules: state.schedules.length,
+        reviews: state.reviews.length
+      }
+    },
+    state: state
+  };
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '');
+  const filename = `矩阵运营_全量备份_${stamp}.json`;
+  downloadText(filename, JSON.stringify(data, null, 2));
+  toast(`已导出全量备份：${filename}`);
+}
+
+function importBackup() {
+  document.getElementById('import-file-input').click();
+}
+
+function handleImportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const text = e.target.result;
+      let parsed;
+      if (file.name.endsWith('.json')) {
+        parsed = JSON.parse(text);
+        const importedState = parsed.state || parsed;
+        if (!importedState.accounts || !Array.isArray(importedState.accounts)) {
+          throw new Error('备份文件格式不正确');
+        }
+        if (!confirm(`确认导入备份？\n将覆盖当前数据。\n\n账号：${importedState.accounts.length}\n策略：${importedState.strategies?.length || 0}\n计划：${importedState.plans?.length || 0}\n排期：${importedState.schedules?.length || 0}\n复盘：${importedState.reviews?.length || 0}`)) {
+          event.target.value = '';
+          return;
+        }
+        state = {
+          accounts: importedState.accounts || [],
+          strategies: importedState.strategies || [],
+          plans: importedState.plans || [],
+          schedules: importedState.schedules || [],
+          reviews: importedState.reviews || []
+        };
+      } else {
+        // txt: just show as reference
+        alert('文本文件为只读备份格式，无法直接导入。如需恢复数据，请导入 JSON 备份文件。');
+        event.target.value = '';
+        return;
+      }
+      saveState();
+      updateNavCounts();
+      const activePage = document.querySelector('.page.active')?.id.replace('page-', '') || 'accounts';
+      renderPage(activePage);
+      toast('数据导入成功');
+    } catch (err) {
+      toast('导入失败：' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function downloadText(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function confirmClearAll() {
+  const total = state.accounts.length + state.strategies.length + state.plans.length + state.schedules.length + state.reviews.length;
+  if (total === 0) {
+    toast('当前没有数据可清空');
+    return;
+  }
+  if (!confirm(`确认清空所有本地数据？\n\n共 ${total} 条记录将被永久删除。\n建议先点击「导出全部数据备份」。\n\n此操作不可撤销！`)) return;
+  if (!confirm('再次确认：真的要清空全部数据吗？')) return;
+  state = { accounts: [], strategies: [], plans: [], schedules: [], reviews: [] };
+  currentStrategyId = null;
+  saveState();
+  updateNavCounts();
+  const activePage = document.querySelector('.page.active')?.id.replace('page-', '') || 'accounts';
+  renderPage(activePage);
+  toast('已清空全部数据');
+}
+
+/* ============================================================
+   Init
+============================================================ */
+async function init() {
+  loadConfig();
+  await loadState();
+  updateNavCounts();
+  updateStorageMeta();
+  renderAccounts();
+
+  // 启动自动同步
+  startAutoSync();
+
+  // 网络状态监听
+  window.addEventListener('online', () => {
+    isOnline = true;
+    if (config.enabled && supabaseClient) {
+      updateSyncStatus('connected');
+      syncFromCloud();
+    }
+  });
+  window.addEventListener('offline', () => {
+    isOnline = false;
+    updateSyncStatus('offline');
+  });
+
+  // global keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
